@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Upload,
   Link as LinkIcon,
@@ -23,6 +22,7 @@ import {
   Sparkles,
   Image as ImageIcon,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
@@ -210,50 +210,42 @@ export function ImageUploadDialog({
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-xl md:max-w-2xl p-0 flex flex-col h-full bg-card text-card-foreground border-l border-border shadow-2xl overflow-hidden"
+        className="w-full sm:max-w-xl md:max-w-2xl flex flex-col p-6 overflow-y-auto"
       >
-        {/* Top Header */}
-        <SheetHeader className="p-5 sm:p-6 border-b border-border bg-muted/20">
-          <div className="flex items-center gap-3">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-gold/15 text-gold border border-gold/30 shadow-xs shrink-0">
-              <IconComponent className="size-5" />
-            </span>
-            <div className="text-left">
-              <SheetTitle className="text-lg sm:text-xl font-bold font-display text-foreground flex items-center gap-2">
-                {title}
-              </SheetTitle>
-              <SheetDescription className="text-xs text-muted-foreground mt-0.5">
-                {description}
-              </SheetDescription>
-            </div>
-          </div>
+        {/* Header */}
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
+            <IconComponent className="size-5 text-primary" />
+            {title}
+          </SheetTitle>
+          <SheetDescription className="text-xs">{description}</SheetDescription>
         </SheetHeader>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+        <div className="space-y-6 py-2 flex-1">
           {/* Asset Live Preview Frame */}
-          <div className="rounded-2xl border border-border bg-muted/30 p-4 sm:p-5 shadow-sm space-y-3">
+          <div className="rounded-xl border bg-muted/20 p-4 space-y-3">
             <div className="flex items-center justify-between text-xs font-semibold text-foreground">
-              <span className="font-display flex items-center gap-1.5">
-                <IconComponent className="size-4 text-gold" />
+              <span className="flex items-center gap-1.5">
+                <IconComponent className="size-4 text-primary" />
                 Live Context Preview
               </span>
               {isCurrentDefault ? (
-                <span className="text-[10px] font-medium text-muted-foreground px-2.5 py-0.5 rounded-full bg-background border border-border shadow-2xs">
+                <Badge variant="outline" className="text-[10px]">
                   Default Asset
-                </span>
+                </Badge>
               ) : (
-                <span className="text-[10px] font-medium text-gold px-2.5 py-0.5 rounded-full bg-gold/10 border border-gold/30 shadow-2xs">
+                <Badge variant="gold" className="text-[10px]">
                   Custom Applied
-                </span>
+                </Badge>
               )}
             </div>
 
             {assetType === "favicon" ? (
               <div className="flex flex-col gap-4">
                 {/* Browser Tab Simulation Frame */}
-                <div className="w-full rounded-xl border border-border bg-background shadow-xs overflow-hidden">
-                  <div className="bg-muted/80 px-3.5 py-2 border-b border-border flex items-center gap-2 text-xs">
+                <div className="w-full rounded-lg border bg-background shadow-xs overflow-hidden">
+                  <div className="bg-muted/60 px-3.5 py-2 border-b flex items-center gap-2 text-xs">
                     <div className="flex gap-1.5">
                       <div className="size-2.5 rounded-full bg-red-400/80" />
                       <div className="size-2.5 rounded-full bg-yellow-400/80" />
@@ -273,18 +265,18 @@ export function ImageUploadDialog({
                       <span className="truncate">{appName} — Portal</span>
                     </div>
                   </div>
-                  <div className="px-3.5 py-2.5 text-[11px] text-muted-foreground flex items-center justify-between bg-muted/10">
+                  <div className="px-3.5 py-2 text-[11px] text-muted-foreground flex items-center justify-between bg-muted/10">
                     <span className="font-mono text-[10px]">https://yourdomain.co.ke/app</span>
-                    <span className="flex items-center gap-1 text-[10px] text-emerald-600 font-medium">
+                    <span className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
                       <ShieldCheck className="size-3" /> Secure Browser Context
                     </span>
                   </div>
                 </div>
 
                 {/* Scaled Multi-Resolution Preview Chips */}
-                <div className="flex items-center gap-4 bg-background p-3 rounded-xl border border-border">
+                <div className="flex items-center gap-4 bg-background p-3 rounded-lg border">
                   <div className="flex items-center gap-3">
-                    <div className="size-12 rounded-xl border border-border bg-muted/30 flex items-center justify-center p-2 shadow-2xs">
+                    <div className="size-12 rounded-lg border bg-muted/30 flex items-center justify-center p-2 shadow-2xs">
                       {selectedUrl && !previewError ? (
                         <img
                           src={selectedUrl}
@@ -305,7 +297,7 @@ export function ImageUploadDialog({
                   <div className="h-8 w-px bg-border mx-1" />
 
                   <div className="flex items-center gap-2.5">
-                    <div className="size-8 rounded-lg border border-border bg-muted/30 flex items-center justify-center p-1.5 shadow-2xs">
+                    <div className="size-8 rounded-md border bg-muted/30 flex items-center justify-center p-1.5 shadow-2xs">
                       {selectedUrl && !previewError ? (
                         <img
                           src={selectedUrl}
@@ -326,9 +318,9 @@ export function ImageUploadDialog({
               </div>
             ) : (
               /* Logo Preview Frame */
-              <div className="rounded-xl border border-border bg-background p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="rounded-lg border bg-background p-4 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3.5">
-                  <div className="size-14 rounded-xl border border-border bg-muted/30 flex items-center justify-center p-2 shadow-2xs overflow-hidden">
+                  <div className="size-14 rounded-lg border bg-muted/30 flex items-center justify-center p-2 shadow-2xs overflow-hidden">
                     {selectedUrl && !previewError ? (
                       <img
                         src={selectedUrl}
@@ -337,11 +329,11 @@ export function ImageUploadDialog({
                         onError={() => setPreviewError(true)}
                       />
                     ) : (
-                      <Sparkles className="size-7 text-gold" />
+                      <Sparkles className="size-7 text-primary" />
                     )}
                   </div>
                   <div>
-                    <h4 className="font-bold text-sm font-display text-foreground">{appName}</h4>
+                    <h4 className="font-bold text-sm text-foreground">{appName}</h4>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Navbar header, invoice receipts & brand mark preview
                     </p>
@@ -358,11 +350,11 @@ export function ImageUploadDialog({
 
           {/* Sources Tabs: Upload vs Direct URL */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-2 w-full bg-muted/60 p-1 rounded-xl">
-              <TabsTrigger value="upload" className="text-xs font-semibold gap-1.5 rounded-lg">
+            <TabsList className="grid grid-cols-2 w-full bg-muted/60 p-1 rounded-lg">
+              <TabsTrigger value="upload" className="text-xs font-semibold gap-1.5">
                 <Upload className="size-3.5" /> Upload File
               </TabsTrigger>
-              <TabsTrigger value="url" className="text-xs font-semibold gap-1.5 rounded-lg">
+              <TabsTrigger value="url" className="text-xs font-semibold gap-1.5">
                 <LinkIcon className="size-3.5" /> Direct URL
               </TabsTrigger>
             </TabsList>
@@ -384,21 +376,21 @@ export function ImageUploadDialog({
                 onDragLeave={() => setIsDragOver(false)}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-2xl p-8 sm:p-10 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3.5 ${
+                className={`border-2 border-dashed rounded-xl p-8 sm:p-10 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3.5 ${
                   isDragOver
-                    ? "border-gold bg-gold/5 scale-[1.01]"
-                    : "border-border hover:border-gold/60 hover:bg-muted/30"
+                    ? "border-primary bg-primary/5 scale-[1.01]"
+                    : "border-border hover:border-primary/60 hover:bg-muted/30"
                 }`}
               >
-                <div className="size-14 rounded-2xl bg-gold/15 text-gold flex items-center justify-center shadow-xs border border-gold/20">
+                <div className="size-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shadow-xs">
                   {isUploading ? (
-                    <LucideLoader className="size-7 animate-spin" />
+                    <LucideLoader className="size-6 animate-spin" />
                   ) : (
-                    <Upload className="size-7" />
+                    <Upload className="size-6" />
                   )}
                 </div>
                 <div className="space-y-1">
-                  <p className="font-bold text-sm text-foreground font-display">
+                  <p className="font-semibold text-sm text-foreground">
                     {isUploading
                       ? "Uploading & Processing Image..."
                       : "Click or Drag & Drop image file"}
@@ -412,7 +404,7 @@ export function ImageUploadDialog({
                   variant="outline"
                   size="sm"
                   disabled={isUploading}
-                  className="mt-1 gap-1.5 rounded-lg border-border hover:border-gold/40"
+                  className="mt-1 gap-1.5 text-xs"
                 >
                   <Upload className="size-3.5" />
                   Browse Files
@@ -422,7 +414,7 @@ export function ImageUploadDialog({
 
             {/* TAB: DIRECT URL */}
             <TabsContent value="url" className="pt-2 space-y-3.5 focus-visible:outline-none">
-              <div className="space-y-2 rounded-2xl border border-border p-4 bg-muted/20">
+              <div className="space-y-2 rounded-xl border p-4 bg-muted/20">
                 <Label htmlFor="custom-url-input" className="text-xs font-semibold">
                   HTTPS Image URL
                 </Label>
@@ -460,24 +452,19 @@ export function ImageUploadDialog({
         </div>
 
         {/* Sticky Sheet Footer */}
-        <SheetFooter className="p-4 sm:p-5 border-t border-border bg-card flex flex-row items-center justify-between gap-3 mt-auto">
+        <SheetFooter className="mt-auto pt-4 border-t flex flex-row items-center justify-between gap-2">
           <div>
             {defaultUrl && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleResetToDefault}
-                    className="text-xs gap-1.5 text-muted-foreground hover:text-foreground rounded-lg"
-                  >
-                    <RotateCcw className="size-3.5" />
-                    Reset Default
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top">Revert to original default asset</TooltipContent>
-              </Tooltip>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleResetToDefault}
+                className="text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+              >
+                <RotateCcw className="size-3.5" />
+                Reset Default
+              </Button>
             )}
           </div>
 
@@ -487,8 +474,9 @@ export function ImageUploadDialog({
               variant="outline"
               size="sm"
               onClick={() => onOpenChange(false)}
-              className="text-xs rounded-lg"
+              className="text-xs"
             >
+              <X className="size-4 mr-1" />
               Cancel
             </Button>
             <Button
@@ -497,10 +485,19 @@ export function ImageUploadDialog({
               size="sm"
               onClick={handleSave}
               disabled={isUploading}
-              className="text-xs font-semibold gap-1.5 shadow-sm rounded-lg"
+              className="text-xs font-semibold gap-1.5 shadow-xs"
             >
-              <Check className="size-3.5" />
-              Save Asset
+              {isUploading ? (
+                <>
+                  <LucideLoader className="size-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Check className="size-4" />
+                  Save Changes
+                </>
+              )}
             </Button>
           </div>
         </SheetFooter>

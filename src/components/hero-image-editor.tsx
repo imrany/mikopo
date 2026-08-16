@@ -26,11 +26,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Upload,
   Link as LinkIcon,
@@ -44,6 +44,7 @@ import {
   Pencil,
   Trash2,
   Layers,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -373,43 +374,37 @@ export function HeroImageEditor({
       <Sheet open={isOpen} onOpenChange={onOpenChange}>
         <SheetContent
           side="right"
-          className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl p-0 flex flex-col h-full bg-card text-card-foreground border-l border-border shadow-2xl overflow-hidden"
+          className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl flex flex-col p-6 overflow-y-auto"
         >
-          {/* Top Sheet Header */}
-          <SheetHeader className="p-5 sm:p-6 border-b border-border bg-muted/20">
-            <div className="flex items-center gap-3">
-              <span className="flex size-10 items-center justify-center rounded-xl bg-gold/15 text-gold border border-gold/30 shadow-xs shrink-0">
-                <Sparkles className="size-5" />
-              </span>
-              <div className="text-left">
-                <SheetTitle className="text-lg sm:text-xl font-bold font-display text-foreground flex items-center gap-2">
-                  Hero Banner Image Manager
-                </SheetTitle>
-                <SheetDescription className="text-xs text-muted-foreground mt-0.5">
-                  Customize the prominent banner graphic displayed at the top of your landing page.
-                </SheetDescription>
-              </div>
-            </div>
+          {/* Header */}
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Sparkles className="size-5 text-primary" />
+              Hero Banner Image Manager
+            </SheetTitle>
+            <SheetDescription className="text-xs">
+              Customize the prominent banner graphic displayed at the top of your landing page.
+            </SheetDescription>
           </SheetHeader>
 
           {/* Scrollable Body Content */}
-          <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+          <div className="space-y-6 py-2 flex-1">
             {/* Live Hero Banner Aspect Preview Frame */}
-            <div className="rounded-2xl border border-border bg-muted/30 p-4 shadow-sm space-y-3">
+            <div className="rounded-xl border bg-muted/20 p-4 space-y-3">
               <div className="flex items-center justify-between text-xs font-semibold text-foreground">
-                <span className="flex items-center gap-1.5 font-display">
-                  <ImageIcon className="size-4 text-gold" />
+                <span className="flex items-center gap-1.5">
+                  <ImageIcon className="size-4 text-primary" />
                   Live Hero Banner Preview
                 </span>
                 <div className="flex items-center gap-2">
                   {isCurrentDefault ? (
-                    <span className="text-[10px] font-medium text-muted-foreground px-2.5 py-0.5 rounded-full bg-background border border-border shadow-2xs">
+                    <Badge variant="outline" className="text-[10px]">
                       Default Graphic
-                    </span>
+                    </Badge>
                   ) : (
-                    <span className="text-[10px] font-medium text-gold px-2.5 py-0.5 rounded-full bg-gold/10 border border-gold/30 shadow-2xs">
+                    <Badge variant="gold" className="text-[10px]">
                       Custom Applied
-                    </span>
+                    </Badge>
                   )}
                   {previewError && (
                     <span className="text-[10px] text-destructive flex items-center gap-1">
@@ -420,7 +415,7 @@ export function HeroImageEditor({
               </div>
 
               {/* 16:9 / 21:9 Aspect Ratio Frame */}
-              <div className="relative aspect-video sm:aspect-21/9 w-full rounded-xl overflow-hidden border border-border/80 bg-slate-950/90 shadow-md flex items-center justify-center">
+              <div className="relative aspect-video sm:aspect-21/9 w-full rounded-lg overflow-hidden border bg-slate-950/90 shadow-xs flex items-center justify-center">
                 {selectedUrl && !previewError ? (
                   <img
                     src={selectedUrl}
@@ -430,7 +425,7 @@ export function HeroImageEditor({
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center text-muted-foreground p-6 text-center">
-                    <ImageIcon className="size-10 mb-2 opacity-50 text-gold" />
+                    <ImageIcon className="size-10 mb-2 opacity-50 text-primary" />
                     <p className="text-xs font-semibold">No Image Selected or Image URL Broken</p>
                     <p className="text-[11px] text-muted-foreground/80 mt-0.5">
                       Select a preset below or paste a direct URL
@@ -446,7 +441,7 @@ export function HeroImageEditor({
                     </span>
                   </div>
                   <div className="max-w-md text-white">
-                    <p className="text-sm sm:text-base font-bold leading-tight drop-shadow-md font-display">
+                    <p className="text-sm sm:text-base font-bold leading-tight drop-shadow-md">
                       Smart Microfinance & Instant Mobile Loans
                     </p>
                     <p className="text-xs text-white/80 drop-shadow-xs line-clamp-1 mt-0.5">
@@ -698,23 +693,18 @@ export function HeroImageEditor({
           </div>
 
           {/* Sticky Sheet Footer */}
-          <SheetFooter className="p-4 sm:p-5 border-t border-border bg-card flex flex-row items-center justify-between gap-3 mt-auto">
+          <SheetFooter className="mt-auto pt-4 border-t flex flex-row items-center justify-between gap-2">
             <div>
               {defaultImage && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleResetToDefault}
-                      className="text-xs gap-1.5 text-muted-foreground hover:text-foreground rounded-lg"
-                    >
-                      <RotateCcw className="size-3.5" /> Default Graphic
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">Revert to original default graphic</TooltipContent>
-                </Tooltip>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetToDefault}
+                  className="text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+                >
+                  <RotateCcw className="size-3.5" /> Reset Default
+                </Button>
               )}
             </div>
 
@@ -724,8 +714,9 @@ export function HeroImageEditor({
                 variant="outline"
                 size="sm"
                 onClick={() => onOpenChange(false)}
-                className="text-xs rounded-lg"
+                className="text-xs"
               >
+                <X className="size-4 mr-1" />
                 Cancel
               </Button>
               <Button
@@ -734,10 +725,19 @@ export function HeroImageEditor({
                 size="sm"
                 onClick={handleSave}
                 disabled={isUploading}
-                className="text-xs font-semibold gap-1.5 shadow-sm rounded-lg"
+                className="text-xs font-semibold gap-1.5 shadow-xs"
               >
-                <Check className="size-3.5" />
-                Publish Hero Image
+                {isUploading ? (
+                  <>
+                    <LucideLoader className="size-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Check className="size-4" />
+                    Save Changes
+                  </>
+                )}
               </Button>
             </div>
           </SheetFooter>
