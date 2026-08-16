@@ -1,0 +1,509 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated"
+}
+
+enum AppRole {
+  super_admin
+  staff
+  user
+}
+
+enum AccountStatus {
+  pending
+  active
+  suspended
+}
+
+enum LoanStatus {
+  pending_guarantors
+  pending_approval
+  approved
+  disbursing
+  active
+  repaid
+  rejected
+  defaulted
+}
+
+enum GuarantorStatus {
+  pending
+  accepted
+  rejected
+}
+
+enum MpesaKind {
+  stk_push
+  b2c_payout
+}
+
+enum MpesaStatus {
+  pending
+  success
+  failed
+}
+
+model Profile {
+  id               String        @id @default(uuid())
+  firstName        String        @default("") @map("first_name")
+  lastName         String        @default("") @map("last_name")
+  email            String        @unique
+  passwordHash     String        @default("") @map("password_hash")
+  phone            String?       @unique
+  idNumber         String?       @unique @map("id_number")
+  referralCode     String        @unique @map("referral_code")
+  referredBy       String?       @map("referred_by")
+  credibilityScore Int           @default(300) @map("credibility_score")
+  loanLimit        Decimal       @default(1000) @map("loan_limit")
+  status           AccountStatus @default(active)
+  isEarningPointsFrozen Boolean  @default(false) @map("is_earning_points_frozen")
+  emailVerified    Boolean       @default(false) @map("email_verified")
+  phoneVerified    Boolean       @default(false) @map("phone_verified")
+  is2faEnabled     Boolean       @default(false) @map("is_2fa_enabled")
+  twoFactorCode    String?       @map("two_factor_code")
+  twoFactorCodeExpiresAt DateTime? @map("two_factor_code_expires_at")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  referrer         Profile?           @relation("Referrals", fields: [referredBy], references: [id], onDelete: SetNull)
+  referees         Profile[]          @relation("Referrals")
+  roles            UserRole[]
+  loans            Loan[]             @relation("BorrowerLoans")
+  guarantees       LoanGuarantor[]    @relation("GuarantorUser")
+  repayments       LoanRepayment[]
+  mpesaTransactions MpesaTransaction[]
+  savedGuarantors  UserGuarantor[]
+  testimonials     Testimonial[]
+  notifications    Notification[]
+  pushSubscriptions PushSubscription[]
+  sessions         UserSession[]
+  phoneRequests    PhoneChangeRequest[]
+  supportTickets   SupportTicket[]
+
+  @@map("profiles")
+}
+
+model UserRole {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  role        AppRole
+  permissions String[] @default([])
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  profile   Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+  @@map("user_roles")
+}
+
+model BusinessSettings {
+  id                 String   @id @default(uuid())
+  businessName       String   @map("business_name")
+  businessLocation   String   @map("business_location")
+  supportPhone       String?  @map("support_phone")
+  supportEmail       String?  @map("support_email")
+  mpesaShortcode     String?  @map("mpesa_shortcode")
+  mpesaAccountNumber String?  @map("mpesa_account_number")
+  mpesaEnvironment   String   @default("sandbox") @map("mpesa_environment")
+  mpesaCallbackUrl   String?  @map("mpesa_callback_url")
+  currency           String   @default("KES")
+  setupCompleted     Boolean  @default(false) @map("setup_completed")
+  allTiersLocked     Boolean  @default(false) @map("all_tiers_locked")
+  smtpHost           String?  @map("smtp_host")
+  smtpPort           Int?     @map("smtp_port")
+  smtpUser           String?  @map("smtp_user")
+  smtpPass           String?  @map("smtp_pass")
+  smtpFromEmail      String?  @map("smtp_from_email")
+  smtpFromName       String?  @map("smtp_from_name")
+  smtpSecure         Boolean  @default(false) @map("smtp_secure")
+  logoUrl            String?  @map("logo_url")
+  faviconUrl         String?  @map("favicon_url")
+  primaryColor       String?  @map("primary_color")
+  secondaryColor     String?  @map("secondary_color")
+  accentColor        String?  @map("accent_color")
+  backgroundColor    String?  @map("background_color")
+  foregroundColor    String?  @map("foreground_color")
+  goldColor          String?  @map("gold_color")
+  landingContent     String?  @map("landing_content")
+  termsContent       String?  @map("terms_content")
+  privacyContent     String?  @map("privacy_content")
+  minCredibilityScore Int     @default(0) @map("min_credibility_score")
+  maxCredibilityScore Int     @default(1000) @map("max_credibility_score")
+  allowActivationWithoutDisbursement Boolean @default(false) @map("allow_activation_without_disbursement")
+  disableSandboxMode Boolean  @default(false) @map("disable_sandbox_mode")
+  disableSandboxTier Boolean  @default(false) @map("disable_sandbox_tier")
+  enable2faByEmail Boolean    @default(false) @map("enable_2fa_by_email")
+  lockDarajaConfig Boolean    @default(false) @map("lock_daraja_config")
+  lockSmtpConfig Boolean      @default(false) @map("lock_smtp_config")
+  maxActiveLoansPerBorrower Int @default(1) @map("max_active_loans_per_borrower")
+  requireGuarantorsForLoans Boolean @default(true) @map("require_guarantors_for_loans")
+  autoRejectIfDefaulted Boolean @default(true) @map("auto_reject_if_defaulted")
+  lockLandingEditMode Boolean @default(false) @map("lock_landing_edit_mode")
+  vapidPublicKey     String?  @map("vapid_public_key")
+  vapidPrivateKey    String?  @map("vapid_private_key")
+  vapidSubject       String?  @map("vapid_subject")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@map("business_settings")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?  @map("actor_id")
+  action     String
+  targetType String?  @map("target_type")
+  targetId   String?  @map("target_id")
+  details    Json     @default("{}")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+}
+
+model LoanProduct {
+  id                  String   @id @default(uuid())
+  name                String   @unique
+  description         String   @default("")
+  minAmount           Decimal  @default(500) @map("min_amount")
+  maxAmount           Decimal  @default(5000) @map("max_amount")
+  interestRate        Decimal  @default(0.10) @map("interest_rate")
+  processingFeeRate   Decimal  @default(0.02) @map("processing_fee_rate")
+  penaltyRate         Decimal? @default(0.25) @map("penalty_rate")
+  customPenaltyAmount Decimal? @map("custom_penalty_amount")
+  termDays            Int      @default(30) @map("term_days")
+  minCredibility      Int      @default(300) @map("min_credibility")
+  guarantorsRequired  Int      @default(2) @map("guarantors_required")
+  sortOrder           Int      @default(0) @map("sort_order")
+  isActive            Boolean  @default(true) @map("is_active")
+  isLocked            Boolean  @default(false) @map("is_locked")
+  isTestTier          Boolean  @default(false) @map("is_test_tier")
+  lockedUserIds       String[] @default([]) @map("locked_user_ids")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  loans               Loan[]
+
+  @@map("loan_products")
+}
+
+model Loan {
+  id                   String     @id @default(uuid())
+  userId               String     @map("user_id")
+  productId            String     @map("product_id")
+  principal            Decimal
+  interestAmount       Decimal    @default(0) @map("interest_amount")
+  processingFee        Decimal    @default(0) @map("processing_fee")
+  penaltyAmount        Decimal    @default(0) @map("penalty_amount")
+  penaltyCount         Int        @default(0) @map("penalty_count")
+  lastPenaltyAppliedAt DateTime?  @map("last_penalty_applied_at")
+  totalDue             Decimal    @default(0) @map("total_due")
+  amountRepaid         Decimal    @default(0) @map("amount_repaid")
+  status               LoanStatus @default(pending_guarantors)
+  purpose              String     @default("")
+  disbursementPhone    String     @map("disbursement_phone")
+  guarantorsRequired   Int        @default(2) @map("guarantors_required")
+  dueDate              DateTime?  @map("due_date")
+  approvedAt           DateTime?  @map("approved_at")
+  approvedBy           String?    @map("approved_by")
+  disbursedAt          DateTime?  @map("disbursed_at")
+  repaidAt             DateTime?  @map("repaid_at")
+  rejectionReason      String?    @map("rejection_reason")
+  createdAt            DateTime   @default(now()) @map("created_at")
+  updatedAt            DateTime   @updatedAt @map("updated_at")
+
+  user                 Profile           @relation("BorrowerLoans", fields: [userId], references: [id], onDelete: Cascade)
+  product              LoanProduct       @relation(fields: [productId], references: [id])
+  guarantors           LoanGuarantor[]
+  mpesaTransactions    MpesaTransaction[]
+  repayments           LoanRepayment[]
+  statusEvents         LoanStatusEvent[]
+  referralRewards      ReferralReward[]
+
+  @@index([userId])
+  @@map("loans")
+}
+enum TestimonialStatus {
+  pending
+  approved
+  rejected
+}
+
+model Testimonial {
+  id         String            @id @default(uuid())
+  userId     String            @map("user_id")
+  authorName String            @map("author_name")
+  role       String            @default("Borrower")
+  content    String
+  rating     Int               @default(5)
+  status     TestimonialStatus @default(pending)
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+
+  user       Profile           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("testimonials")
+}
+
+model UserGuarantor {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  phone        String
+  idNumber     String   @map("id_number")
+  address      String   @default("")
+  relationship String   @default("")
+  occupation   String   @default("")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user         Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_guarantors")
+}
+
+model LoanGuarantor {
+  id           String          @id @default(uuid())
+  loanId       String          @map("loan_id")
+  guarantorId  String?         @map("guarantor_id")
+  firstName    String          @default("") @map("first_name")
+  lastName     String          @default("") @map("last_name")
+  phone        String          @default("")
+  idNumber     String          @default("") @map("id_number")
+  address      String          @default("")
+  relationship String          @default("")
+  occupation   String          @default("")
+  status       GuarantorStatus @default(pending)
+  respondedAt  DateTime?       @map("responded_at")
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  loan         Loan            @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  guarantor    Profile?        @relation("GuarantorUser", fields: [guarantorId], references: [id], onDelete: Cascade)
+
+  @@map("loan_guarantors")
+}
+
+model LoanRepayment {
+  id           String   @id @default(uuid())
+  loanId       String   @map("loan_id")
+  userId       String   @map("user_id")
+  amount       Decimal
+  mpesaReceipt String?  @map("mpesa_receipt")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  loan         Loan     @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  user         Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("loan_repayments")
+}
+
+model MpesaTransaction {
+  id                       String      @id @default(uuid())
+  loanId                   String?     @map("loan_id")
+  userId                   String?     @map("user_id")
+  kind                     MpesaKind
+  status                   MpesaStatus @default(pending)
+  amount                   Decimal
+  phone                    String
+  checkoutRequestId        String?     @map("checkout_request_id")
+  merchantRequestId        String?     @map("merchant_request_id")
+  conversationId           String?     @map("conversation_id")
+  originatorConversationId String?     @map("originator_conversation_id")
+  mpesaReceipt             String?     @map("mpesa_receipt")
+  resultCode               String?     @map("result_code")
+  resultDesc               String?     @map("result_desc")
+  payload                  Json        @default("{}")
+  createdAt                DateTime    @default(now()) @map("created_at")
+  updatedAt                DateTime    @updatedAt @map("updated_at")
+
+  loan                     Loan?       @relation(fields: [loanId], references: [id], onDelete: SetNull)
+  user                     Profile?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("mpesa_transactions")
+}
+
+model DarajaCredentials {
+  id                 String   @id @default(uuid())
+  environment        String   @default("sandbox")
+  consumerKey        String   @default("") @map("consumer_key")
+  consumerSecret     String   @default("") @map("consumer_secret")
+  passkey            String   @default("")
+  initiatorName      String   @default("") @map("initiator_name")
+  securityCredential String   @default("") @map("security_credential")
+  updatedAt          DateTime @default(now()) @map("updated_at")
+  updatedBy          String?  @map("updated_by")
+
+  @@map("daraja_credentials")
+}
+
+model LoanStatusEvent {
+  id             String   @id @default(uuid())
+  loanId         String   @map("loan_id")
+  status         String
+  previousStatus String?  @map("previous_status")
+  note           String?
+  actorId        String?  @map("actor_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  loan           Loan     @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  @@index([loanId])
+  @@map("loan_status_events")
+}
+
+model ReferralReward {
+  id           String   @id @default(uuid())
+  referrerId   String   @map("referrer_id")
+  referredId   String   @map("referred_id")
+  loanId       String   @unique @map("loan_id")
+  scoreAwarded Int      @map("score_awarded")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  loan         Loan     @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  @@index([referrerId])
+  @@map("referral_rewards")
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("newsletter_subscribers")
+}
+
+model Notification {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  roleTarget String?  @map("role_target")
+  title      String
+  message    String
+  type       String   @default("info")
+  isRead     Boolean  @default(false) @map("is_read")
+  link       String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user       Profile? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+model UserSession {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  tokenHash    String   @map("token_hash")
+  deviceInfo   String   @default("Desktop / Mobile Device") @map("device_info")
+  ipAddress    String   @default("—") @map("ip_address")
+  userAgent    String   @default("") @map("user_agent")
+  lastActiveAt DateTime @default(now()) @map("last_active_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user         Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_sessions")
+}
+
+enum PhoneRequestStatus {
+  pending
+  approved
+  rejected
+}
+
+model PhoneChangeRequest {
+  id              String             @id @default(uuid())
+  userId          String             @map("user_id")
+  currentPhone    String             @map("current_phone")
+  requestedPhone  String             @map("requested_phone")
+  reason          String             @default("")
+  status          PhoneRequestStatus @default(pending)
+  rejectionReason String?            @map("rejection_reason")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  user            Profile            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("phone_change_requests")
+}
+
+enum TicketStatus {
+  open
+  in_progress
+  resolved
+  closed
+}
+
+enum TicketPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+model SupportTicket {
+  id          String            @id @default(uuid())
+  userId      String            @map("user_id")
+  subject     String
+  category    String            @default("general")
+  message     String
+  status      TicketStatus      @default(open)
+  priority    TicketPriority    @default(medium)
+  adminNotes  String?           @map("admin_notes")
+  assignedTo  String?           @map("assigned_to")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  user        Profile           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  responses   SupportResponse[]
+
+  @@index([userId])
+  @@map("support_tickets")
+}
+
+model SupportResponse {
+  id         String        @id @default(uuid())
+  ticketId   String        @map("ticket_id")
+  senderId   String        @map("sender_id")
+  isStaff    Boolean       @default(false) @map("is_staff")
+  senderName String        @default("") @map("sender_name")
+  message    String
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("support_responses")
+}
+
+model HeroImagePreset {
+  id          String   @id @default(uuid())
+  name        String
+  category    String   @default("Fintech")
+  url         String   @default("")
+  description String?  @default("")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("hero_image_presets")
+}

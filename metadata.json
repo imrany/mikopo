@@ -1,0 +1,6 @@
+{
+  "name": "Mikopo",
+  "description": "M-Pesa loan management platform with loan calculation, M-Pesa Daraja integration, user management, and receipt generation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
