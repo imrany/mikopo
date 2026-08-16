@@ -316,11 +316,6 @@ function Landing() {
     setContentMap((prev) => ({ ...prev, hero_image_url: previewUrl }));
   };
 
-  const handleResetDefaults = () => {
-    setContentMap({});
-    setHasUnsavedChanges(true);
-  };
-
   // Seeded with the loader's server-fetched products so there's no
   // client-side waterfall on first paint; useQuery only re-fetches after
   // staleTime or on invalidation from here on.
@@ -383,12 +378,10 @@ function Landing() {
       <AdminLandingBar
         hasUnsavedChanges={hasUnsavedChanges}
         contentMap={contentMap}
-        onReset={handleResetDefaults}
         onSaved={() => setHasUnsavedChanges(false)}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         lockLandingEditMode={lockLandingEditMode}
-        onEditHeroImage={() => setIsHeroEditorOpen(true)}
       />
       <SiteHeader />
 

@@ -5,12 +5,10 @@ import {
   Building2,
   FileText,
   Shield,
-  Image as ImageIcon,
   Save,
   LucideLoader,
   Palette,
   Eye,
-  Sparkles,
   Check,
   Upload,
 } from "lucide-react";
@@ -424,7 +422,7 @@ export function BusinessSettingsForm() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="b-name" className="text-xs font-semibold">
-                      Business / App Name *
+                      Business / App Name <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="b-name"
@@ -442,7 +440,7 @@ export function BusinessSettingsForm() {
 
                   <div className="space-y-1.5">
                     <Label htmlFor="b-location" className="text-xs font-semibold">
-                      Business Location *
+                      Business Location <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="b-location"
@@ -467,18 +465,16 @@ export function BusinessSettingsForm() {
                         htmlFor="b-logo"
                         className="text-xs font-semibold flex items-center gap-1.5"
                       >
-                        <ImageIcon className="h-3.5 w-3.5 text-primary" />
                         App Logo Asset
                       </Label>
                       <Button
                         type="button"
-                        variant="outline"
                         size="sm"
                         onClick={() => setIsLogoDialogOpen(true)}
-                        className="text-xs h-7 gap-1.5 border-primary/40 text-primary hover:bg-primary/10"
+                        className="text-xs h-7 gap-1.5"
                       >
                         <Upload className="h-3 w-3" />
-                        Upload / Pick Logo
+                        Upload Logo
                       </Button>
                     </div>
 
@@ -517,7 +513,7 @@ export function BusinessSettingsForm() {
                           className="shadow-none text-xs h-8"
                         />
                         <p className="text-[10px] text-muted-foreground">
-                          Shown on navbar & invoices. Uploaded files save to custom UPLOAD_DIR.
+                          Shown on navbar & invoices.
                         </p>
                       </div>
                     </div>
@@ -530,18 +526,16 @@ export function BusinessSettingsForm() {
                         htmlFor="b-favicon"
                         className="text-xs font-semibold flex items-center gap-1.5"
                       >
-                        <Sparkles className="h-3.5 w-3.5 text-primary" />
                         App Favicon Asset
                       </Label>
                       <Button
                         type="button"
-                        variant="outline"
                         size="sm"
                         onClick={() => setIsFaviconDialogOpen(true)}
-                        className="text-xs h-7 gap-1.5 border-primary/40 text-primary hover:bg-primary/10"
+                        className="text-xs h-7 gap-1.5"
                       >
                         <Upload className="h-3 w-3" />
-                        Upload / Pick Favicon
+                        Upload Favicon
                       </Button>
                     </div>
 
@@ -580,7 +574,7 @@ export function BusinessSettingsForm() {
                           className="text-xs shadow-none h-8"
                         />
                         <p className="text-[10px] text-muted-foreground">
-                          Shown in browser tabs & bookmarks. Replaces previous upload.
+                          Shown in browser tabs & bookmarks.
                         </p>
                       </div>
                     </div>
@@ -954,7 +948,7 @@ export function BusinessSettingsForm() {
                   </p>
 
                   {previewTerms ? (
-                    <div className="p-4 border rounded-lg bg-card min-h-[280px]">
+                    <div className="p-4 border rounded-lg bg-card min-h-70">
                       <MarkdownRenderer content={termsContent} />
                     </div>
                   ) : (
@@ -1018,7 +1012,7 @@ export function BusinessSettingsForm() {
                   </p>
 
                   {previewPrivacy ? (
-                    <div className="p-4 border rounded-lg bg-card min-h-[280px]">
+                    <div className="p-4 border rounded-lg bg-card min-h-70">
                       <MarkdownRenderer content={privacyContent} />
                     </div>
                   ) : (

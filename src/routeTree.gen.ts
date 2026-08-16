@@ -30,7 +30,6 @@ import { Route as AuthenticatedAdminRulesRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin/settings'
 import { Route as AuthenticatedAdminSupportRouteImport } from './routes/_authenticated/admin/support'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
-import { Route as ApiUploadsFilenameRouteImport } from './routes/api/uploads/$filename'
 import { Route as AuthenticatedAdminLoansLoanIdRouteImport } from './routes/_authenticated/admin/loans.$loanId'
 import { Route as AuthenticatedAdminUserUserIdRouteImport } from './routes/_authenticated/admin/user.$userId'
 import { Route as ApiPublicMpesaB2cResultRouteImport } from './routes/api/public/mpesa/b2c-result'
@@ -146,11 +145,6 @@ const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
-const ApiUploadsFilenameRoute = ApiUploadsFilenameRouteImport.update({
-  id: '/api/uploads/$filename',
-  path: '/api/uploads/$filename',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthenticatedAdminLoansLoanIdRoute =
   AuthenticatedAdminLoansLoanIdRouteImport.update({
     id: '/loans/$loanId',
@@ -195,7 +189,6 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/support': typeof AuthenticatedAdminSupportRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
-  '/api/uploads/$filename': typeof ApiUploadsFilenameRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/admin/loans/$loanId': typeof AuthenticatedAdminLoansLoanIdRoute
   '/admin/user/$userId': typeof AuthenticatedAdminUserUserIdRoute
@@ -221,7 +214,6 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/support': typeof AuthenticatedAdminSupportRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
-  '/api/uploads/$filename': typeof ApiUploadsFilenameRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/admin/loans/$loanId': typeof AuthenticatedAdminLoansLoanIdRoute
   '/admin/user/$userId': typeof AuthenticatedAdminUserUserIdRoute
@@ -250,7 +242,6 @@ export interface FileRoutesById {
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/_authenticated/admin/support': typeof AuthenticatedAdminSupportRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
-  '/api/uploads/$filename': typeof ApiUploadsFilenameRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/admin/loans/$loanId': typeof AuthenticatedAdminLoansLoanIdRoute
   '/_authenticated/admin/user/$userId': typeof AuthenticatedAdminUserUserIdRoute
@@ -279,7 +270,6 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/support'
     | '/admin/users'
-    | '/api/uploads/$filename'
     | '/admin/'
     | '/admin/loans/$loanId'
     | '/admin/user/$userId'
@@ -305,7 +295,6 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/support'
     | '/admin/users'
-    | '/api/uploads/$filename'
     | '/admin'
     | '/admin/loans/$loanId'
     | '/admin/user/$userId'
@@ -333,7 +322,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/settings'
     | '/_authenticated/admin/support'
     | '/_authenticated/admin/users'
-    | '/api/uploads/$filename'
     | '/_authenticated/admin/'
     | '/_authenticated/admin/loans/$loanId'
     | '/_authenticated/admin/user/$userId'
@@ -348,7 +336,6 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   SetupRoute: typeof SetupRoute
   TermsRoute: typeof TermsRoute
-  ApiUploadsFilenameRoute: typeof ApiUploadsFilenameRoute
   ApiPublicMpesaB2cResultRoute: typeof ApiPublicMpesaB2cResultRoute
   ApiPublicMpesaStkCallbackRoute: typeof ApiPublicMpesaStkCallbackRoute
 }
@@ -502,13 +489,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
-    '/api/uploads/$filename': {
-      id: '/api/uploads/$filename'
-      path: '/api/uploads/$filename'
-      fullPath: '/api/uploads/$filename'
-      preLoaderRoute: typeof ApiUploadsFilenameRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authenticated/admin/loans/$loanId': {
       id: '/_authenticated/admin/loans/$loanId'
       path: '/loans/$loanId'
@@ -599,7 +579,6 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   SetupRoute: SetupRoute,
   TermsRoute: TermsRoute,
-  ApiUploadsFilenameRoute: ApiUploadsFilenameRoute,
   ApiPublicMpesaB2cResultRoute: ApiPublicMpesaB2cResultRoute,
   ApiPublicMpesaStkCallbackRoute: ApiPublicMpesaStkCallbackRoute,
 }

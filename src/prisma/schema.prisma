@@ -121,6 +121,7 @@ model BusinessSettings {
   smtpFromName       String?  @map("smtp_from_name")
   smtpSecure         Boolean  @default(false) @map("smtp_secure")
   logoUrl            String?  @map("logo_url")
+  heroImageUrl       String?  @map("hero_image_url")
   faviconUrl         String?  @map("favicon_url")
   primaryColor       String?  @map("primary_color")
   secondaryColor     String?  @map("secondary_color")

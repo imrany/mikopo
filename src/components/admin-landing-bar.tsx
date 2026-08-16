@@ -1,15 +1,5 @@
 import { useEffect, useRef } from "react";
-import {
-  Save,
-  RotateCcw,
-  LucideLoader,
-  Sparkles,
-  Globe,
-  User,
-  ShieldCheck,
-  Layers,
-  Image as ImageIcon,
-} from "lucide-react";
+import { Save, LucideLoader, Sparkles, Globe, User, ShieldCheck, Layers } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -24,23 +14,19 @@ export type LandingViewMode = "public" | "borrower" | "staff" | "all";
 interface AdminLandingBarProps {
   hasUnsavedChanges: boolean;
   contentMap: Record<string, string>;
-  onReset: () => void;
   onSaved: () => void;
   viewMode: LandingViewMode;
   onViewModeChange: (mode: LandingViewMode) => void;
   lockLandingEditMode?: boolean;
-  onEditHeroImage?: () => void;
 }
 
 export function AdminLandingBar({
   hasUnsavedChanges,
   contentMap,
-  onReset,
   onSaved,
   viewMode,
   onViewModeChange,
   lockLandingEditMode = false,
-  onEditHeroImage,
 }: AdminLandingBarProps) {
   const { token, isStaff } = useAuth();
   const queryClient = useQueryClient();
@@ -187,40 +173,6 @@ export function AdminLandingBar({
       </div>
 
       <div className="flex items-center gap-2 ml-auto">
-        {onEditHeroImage && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onEditHeroImage}
-                className="h-7 text-xs border-sidebar-border text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground gap-1"
-              >
-                <ImageIcon className="size-3 text-gold" /> Edit Hero Image
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              Upload a new hero graphic or select from curated fintech presets
-            </TooltipContent>
-          </Tooltip>
-        )}
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onReset}
-              className="h-7 text-xs border-sidebar-border text-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-            >
-              <RotateCcw className="size-3 mr-1" /> Reset Defaults
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            Revert all custom text copy and images back to system defaults
-          </TooltipContent>
-        </Tooltip>
-
         <Tooltip>
           <TooltipTrigger asChild>
             <Button

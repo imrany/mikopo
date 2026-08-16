@@ -645,7 +645,7 @@ export function ProfileEditDialog({ trigger }: { trigger?: React.ReactNode }) {
                 No active device logs recorded yet. Your current session is active.
               </div>
             ) : (
-              <div className="space-y-2.5 max-h-[260px] overflow-y-auto pr-1">
+              <div className="space-y-2.5 max-h-65 overflow-y-auto pr-1">
                 {sessions.map((sess, idx) => {
                   const isCurrent = idx === 0;
                   return (
@@ -764,7 +764,7 @@ export function ProfileEditDialog({ trigger }: { trigger?: React.ReactNode }) {
             {phoneRequests.length > 0 && (
               <div className="pt-2 border-t border-border/60 space-y-2">
                 <h5 className="text-xs font-semibold">Your Phone Change History</h5>
-                <div className="space-y-2 max-h-[140px] overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-35 overflow-y-auto pr-1">
                   {phoneRequests.map((req) => (
                     <div
                       key={req.id}

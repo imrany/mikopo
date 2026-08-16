@@ -35,9 +35,7 @@ import {
   Upload,
   Link as LinkIcon,
   Image as ImageIcon,
-  RotateCcw,
   Check,
-  Sparkles,
   AlertCircle,
   LucideLoader,
   Plus,
@@ -51,6 +49,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/auth-context";
 import { adminUploadImage } from "@/lib/upload.functions";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   listHeroPresets,
   adminCreateHeroPreset,
@@ -372,15 +371,12 @@ export function HeroImageEditor({
   return (
     <>
       <Sheet open={isOpen} onOpenChange={onOpenChange}>
-        <SheetContent
-          side="right"
-          className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl flex flex-col p-6 overflow-y-auto"
-        >
+        <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col p-6 overflow-y-auto">
           {/* Header */}
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
-              <Sparkles className="size-5 text-primary" />
-              Hero Banner Image Manager
+              <ImageIcon className="size-5 text-primary" />
+              Hero Image Editor
             </SheetTitle>
             <SheetDescription className="text-xs">
               Customize the prominent banner graphic displayed at the top of your landing page.
@@ -392,10 +388,7 @@ export function HeroImageEditor({
             {/* Live Hero Banner Aspect Preview Frame */}
             <div className="rounded-xl border bg-muted/20 p-4 space-y-3">
               <div className="flex items-center justify-between text-xs font-semibold text-foreground">
-                <span className="flex items-center gap-1.5">
-                  <ImageIcon className="size-4 text-primary" />
-                  Live Hero Banner Preview
-                </span>
+                <span className="flex items-center gap-1.5">Live Hero Banner Preview</span>
                 <div className="flex items-center gap-2">
                   {isCurrentDefault ? (
                     <Badge variant="outline" className="text-[10px]">
@@ -434,7 +427,7 @@ export function HeroImageEditor({
                 )}
 
                 {/* Subtle overlay watermark to simulate landing hero composition */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none p-4 flex flex-col justify-between">
+                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent pointer-events-none p-4 flex flex-col justify-between">
                   <div className="flex justify-between items-start">
                     <span className="text-[10px] uppercase tracking-wider font-semibold text-white/90 bg-black/50 backdrop-blur-xs px-2.5 py-1 rounded-md border border-white/10">
                       Landing Hero Preview
@@ -470,7 +463,6 @@ export function HeroImageEditor({
                 {activeTab === "presets" && isStaff && (
                   <Button
                     type="button"
-                    variant="gold"
                     size="sm"
                     onClick={handleOpenAddPreset}
                     className="h-8 text-xs font-semibold gap-1.5 rounded-lg shadow-xs self-end sm:self-auto"
@@ -484,7 +476,7 @@ export function HeroImageEditor({
               <TabsContent value="presets" className="pt-2 space-y-3 focus-visible:outline-none">
                 {isPresetsLoading ? (
                   <div className="py-12 flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                    <LucideLoader className="size-6 animate-spin text-gold" />
+                    <LucideLoader className="size-6 animate-spin text-primary" />
                     <p className="text-xs">Loading presets...</p>
                   </div>
                 ) : presets.length === 0 ? (
@@ -496,7 +488,6 @@ export function HeroImageEditor({
                     {isStaff && (
                       <Button
                         type="button"
-                        variant="gold"
                         size="sm"
                         onClick={handleOpenAddPreset}
                         className="text-xs gap-1.5"
@@ -518,8 +509,8 @@ export function HeroImageEditor({
                           onClick={() => updateSelectedUrl(effectiveUrl)}
                           className={`group relative rounded-xl border p-3 cursor-pointer transition-all duration-200 flex flex-col justify-between ${
                             isSelected
-                              ? "border-gold ring-2 ring-gold/30 bg-gold/5 shadow-sm"
-                              : "border-border hover:border-gold/50 bg-card hover:bg-muted/20 shadow-2xs"
+                              ? "border-primary ring-2 ring-primary/30 bg-primary/5 shadow-sm"
+                              : "border-border hover:border-primary/50 bg-card hover:bg-muted/20 shadow-2xs"
                           }`}
                         >
                           <div className="space-y-2.5">
@@ -540,15 +531,15 @@ export function HeroImageEditor({
                               </div>
 
                               {isSelected && (
-                                <div className="absolute top-2 right-2 size-5 rounded-full bg-gold text-gold-foreground flex items-center justify-center shadow-md">
-                                  <Check className="size-3 stroke-[3]" />
+                                <div className="absolute top-2 right-2 size-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md">
+                                  <Check className="size-3 stroke-3" />
                                 </div>
                               )}
                             </div>
 
                             {/* Info */}
                             <div>
-                              <h4 className="font-bold text-xs text-foreground line-clamp-1 group-hover:text-gold transition-colors font-display">
+                              <h4 className="font-bold text-xs text-foreground line-clamp-1 group-hover:text-primary transition-colors font-display">
                                 {preset.name}
                               </h4>
                               {preset.description && (
@@ -620,11 +611,11 @@ export function HeroImageEditor({
                   onClick={() => fileInputRef.current?.click()}
                   className={`border-2 border-dashed rounded-2xl p-8 sm:p-10 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-3.5 ${
                     isDragOver
-                      ? "border-gold bg-gold/5 scale-[1.01]"
-                      : "border-border hover:border-gold/60 hover:bg-muted/30"
+                      ? "border-primary bg-primary/5 scale-[1.01]"
+                      : "border-border hover:border-primary/60 hover:bg-muted/30"
                   }`}
                 >
-                  <div className="size-14 rounded-2xl bg-gold/15 text-gold flex items-center justify-center shadow-xs border border-gold/20">
+                  <div className="size-14 rounded-2xl bg-primary/15 text-primary flex items-center justify-center shadow-xs border border-primary/20">
                     {isUploading ? (
                       <LucideLoader className="size-7 animate-spin" />
                     ) : (
@@ -694,20 +685,6 @@ export function HeroImageEditor({
 
           {/* Sticky Sheet Footer */}
           <SheetFooter className="mt-auto pt-4 border-t flex flex-row items-center justify-between gap-2">
-            <div>
-              {defaultImage && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleResetToDefault}
-                  className="text-xs gap-1.5 text-muted-foreground hover:text-foreground"
-                >
-                  <RotateCcw className="size-3.5" /> Reset Default
-                </Button>
-              )}
-            </div>
-
             <div className="flex items-center gap-2">
               <Button
                 type="button"
@@ -721,7 +698,6 @@ export function HeroImageEditor({
               </Button>
               <Button
                 type="button"
-                variant="gold"
                 size="sm"
                 onClick={handleSave}
                 disabled={isUploading}
@@ -750,9 +726,9 @@ export function HeroImageEditor({
           <DialogHeader>
             <DialogTitle className="text-base font-bold font-display text-foreground flex items-center gap-2">
               {editingPresetId ? (
-                <Pencil className="size-4 text-gold" />
+                <Pencil className="size-4 text-primary" />
               ) : (
-                <Plus className="size-4 text-gold" />
+                <Plus className="size-4 text-primary" />
               )}
               {editingPresetId ? "Edit Hero Image Preset" : "Add New Hero Image Preset"}
             </DialogTitle>
@@ -850,7 +826,6 @@ export function HeroImageEditor({
               </Button>
               <Button
                 type="submit"
-                variant="gold"
                 size="sm"
                 disabled={createMutation.isPending || updateMutation.isPending}
                 className="text-xs font-semibold gap-1.5 shadow-sm"

@@ -24,6 +24,7 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/auth-context";
@@ -208,10 +209,7 @@ export function ImageUploadDialog({
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-xl md:max-w-2xl flex flex-col p-6 overflow-y-auto"
-      >
+      <SheetContent side="right" className="w-full sm:max-w-xl flex flex-col p-6 overflow-y-auto">
         {/* Header */}
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
@@ -226,10 +224,7 @@ export function ImageUploadDialog({
           {/* Asset Live Preview Frame */}
           <div className="rounded-xl border bg-muted/20 p-4 space-y-3">
             <div className="flex items-center justify-between text-xs font-semibold text-foreground">
-              <span className="flex items-center gap-1.5">
-                <IconComponent className="size-4 text-primary" />
-                Live Context Preview
-              </span>
+              <span className="flex items-center gap-1.5">Live Context Preview</span>
               {isCurrentDefault ? (
                 <Badge variant="outline" className="text-[10px]">
                   Default Asset
@@ -247,11 +242,11 @@ export function ImageUploadDialog({
                 <div className="w-full rounded-lg border bg-background shadow-xs overflow-hidden">
                   <div className="bg-muted/60 px-3.5 py-2 border-b flex items-center gap-2 text-xs">
                     <div className="flex gap-1.5">
-                      <div className="size-2.5 rounded-full bg-red-400/80" />
-                      <div className="size-2.5 rounded-full bg-yellow-400/80" />
-                      <div className="size-2.5 rounded-full bg-green-400/80" />
+                      <div className="size-2.5 rounded-full bg-destructive/80" />
+                      <div className="size-2.5 rounded-full bg-gold/80" />
+                      <div className="size-2.5 rounded-full bg-primary/80" />
                     </div>
-                    <div className="flex items-center gap-2 bg-background px-3 py-1 rounded-md text-[11px] font-semibold text-foreground max-w-[240px] truncate shadow-2xs border border-border/50">
+                    <div className="flex items-center gap-2 bg-background px-3 py-1 rounded-md text-[11px] font-semibold text-foreground max-w-60 truncate shadow-2xs border border-border/50">
                       {selectedUrl && !previewError ? (
                         <img
                           src={selectedUrl}
@@ -267,7 +262,7 @@ export function ImageUploadDialog({
                   </div>
                   <div className="px-3.5 py-2 text-[11px] text-muted-foreground flex items-center justify-between bg-muted/10">
                     <span className="font-mono text-[10px]">https://yourdomain.co.ke/app</span>
-                    <span className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                    <span className="flex items-center gap-1 text-[10px] text-primary font-medium">
                       <ShieldCheck className="size-3" /> Secure Browser Context
                     </span>
                   </div>
@@ -382,7 +377,7 @@ export function ImageUploadDialog({
                     : "border-border hover:border-primary/60 hover:bg-muted/30"
                 }`}
               >
-                <div className="size-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shadow-xs">
+                <div className="size-12 rounded-full bg-primary/10 text-primary flex items-center justify-center shadow-xs">
                   {isUploading ? (
                     <LucideLoader className="size-6 animate-spin" />
                   ) : (

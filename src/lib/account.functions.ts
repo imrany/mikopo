@@ -381,7 +381,7 @@ export const getAdminPhoneRequests = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     try {
       const { roles } = context;
-      if (!roles.includes("super_admin") && !roles.includes("staff")) {
+      if (roles && !roles?.includes("super_admin") && !roles?.includes("staff")) {
         throw new Error("Forbidden: Staff or Admin role required");
       }
       const { listAdminPhoneRequests } = await import("./account.server");
@@ -398,7 +398,7 @@ export const decidePhoneChangeRequest = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     try {
       const { userId, roles } = context;
-      if (!roles.includes("super_admin") && !roles.includes("staff")) {
+      if (roles && !roles?.includes("super_admin") && !roles?.includes("staff")) {
         throw new Error("Forbidden: Staff or Admin role required");
       }
       const { decidePhoneChangeRequest: decideReq } = await import("./account.server");
@@ -421,6 +421,7 @@ export const getPublicBusinessConfig = createServerFn({ method: "GET" }).handler
       supportPhone: settings?.supportPhone || "",
       supportEmail: settings?.supportEmail || "",
       logoUrl: settings?.logoUrl || "",
+      heroImageUrl: settings?.heroImageUrl || "",
       faviconUrl: settings?.faviconUrl || "",
       primaryColor: settings?.primaryColor || "",
       secondaryColor: settings?.secondaryColor || "",
