@@ -147,16 +147,20 @@ export function computeLoanDueDateInfo(
   }
 }
 
-export function useRealtimeDeadline(dueDateStr?: string | null, isRepaid = false) {
+export function useRealtimeDeadline(
+  dueDateStr?: string | null,
+  isRepaid = false,
+  isStopped = false,
+) {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
-    if (!dueDateStr || isRepaid) return;
+    if (!dueDateStr || isRepaid || isStopped) return;
     const interval = setInterval(() => {
       setNow(new Date());
     }, 1000);
     return () => clearInterval(interval);
-  }, [dueDateStr, isRepaid]);
+  }, [dueDateStr, isRepaid, isStopped]);
 
   return useMemo(
     () => computeLoanDueDateInfo(dueDateStr, now, isRepaid),

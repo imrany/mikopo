@@ -804,6 +804,7 @@ function LoansPage() {
                       <Row label="Outstanding" value={formatKes(Math.max(0, outstanding))} />
                       <LoanCardDeadline
                         dueDateStr={loan.due_date}
+                        status={loan.status}
                         isRepaid={loan.status === "repaid" || outstanding <= 0}
                       />
                       <Row
@@ -985,18 +986,36 @@ function Row({ label, value }: { label: string; value: string }) {
 
 function LoanCardDeadline({
   dueDateStr,
+  status,
   isRepaid = false,
 }: {
   dueDateStr?: string | null;
+  status?: string;
   isRepaid?: boolean;
 }) {
-  const dueInfo = useRealtimeDeadline(dueDateStr, isRepaid);
-  if (isRepaid) {
+  const isRunning = (status === "active" || status === "defaulted") && !isRepaid;
+  const dueInfo = useRealtimeDeadline(dueDateStr, isRepaid, !isRunning);
+
+  if (isRepaid || status === "repaid") {
     return <Row label="Loan deadline" value="Fully Repaid" />;
   }
+
+  if (status === "rejected") {
+    return <Row label="Loan deadline" value="Request Rejected" />;
+  }
+
+  if (status === "cancelled") {
+    return <Row label="Loan deadline" value="Loan Cancelled" />;
+  }
+
+  if (!isRunning) {
+    return <Row label="Loan deadline" value="Starts upon disbursement" />;
+  }
+
   if (!dueDateStr) {
     return <Row label="Loan deadline" value="Awaiting disbursement" />;
   }
+
   return (
     <>
       <Row label="Loan deadline" value={dueInfo.fullDeadlineText} />
