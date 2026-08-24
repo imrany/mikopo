@@ -284,22 +284,16 @@ function RepayLoanFormBody({
             <button
               type="button"
               onClick={() => setShowFinancialDetails(true)}
-              className="w-full flex items-center justify-between text-xs text-muted-foreground hover:text-foreground transition-colors group cursor-pointer py-0.5"
+              className="w-full flex items-center justify-between text-xs transition-colors group cursor-pointer py-0.5"
               aria-expanded={false}
             >
-              <span className="flex items-center gap-1.5 font-medium text-foreground/80 group-hover:text-foreground">
-                <MoreHorizontal className="size-4 text-primary" />
-                <span>Balance breakdown</span>
-              </span>
-              <span className="flex items-center gap-1 text-[11px] text-muted-foreground font-mono">
-                <span className="font-semibold text-primary">{formatKes(outstanding)}</span>
-                <ChevronRight className="size-3.5" />
-              </span>
+              <MoreHorizontal className="size-4 text-primary group-hover:text-foreground" />
+              <ChevronRight className="size-4 text-primay group-hover:text-foreground" />
             </button>
           </div>
         ) : (
           <>
-            <div className="flex items-center justify-between border-t border-border/40 pt-2 text-xs">
+            <div className="flex items-center justify-between border-t border-border/40 pt-2">
               <span className="text-muted-foreground">Total Repayable</span>
               <span className="font-medium text-foreground">
                 {formatKes(Number(loan.total_due))}
@@ -320,18 +314,18 @@ function RepayLoanFormBody({
             {Number(loan.amount_repaid) > 0 && (
               <div className="flex items-center justify-between border-t border-border/40 pt-2 text-xs">
                 <span className="text-muted-foreground">Amount Repaid So Far</span>
-                <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                <span className="font-medium text-primary">
                   {formatKes(Number(loan.amount_repaid))}
                 </span>
               </div>
             )}
 
-            <div className="flex items-center justify-between border-t border-border/40 pt-2 text-xs">
-              <span className="text-muted-foreground font-medium">Current Outstanding</span>
-              <span className="font-semibold text-sm text-primary">{formatKes(outstanding)}</span>
+            <div className="flex items-center justify-between border-t border-border/40 pt-2">
+              <span className="text-muted-foreground">Current Outstanding</span>
+              <span className="font-semibold text-primary">{formatKes(outstanding)}</span>
             </div>
 
-            <div className="border-t border-border/40 pt-1.5 -mb-1 flex justify-center">
+            <div className="border-t border-border/40 pt-1.5 -mb-1 flex justify-end">
               <button
                 type="button"
                 onClick={() => setShowFinancialDetails(false)}
