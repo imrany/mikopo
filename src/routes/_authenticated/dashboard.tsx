@@ -34,7 +34,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardSkeleton } from "@/components/ui/skeleton-loaders";
 import { RepayLoanDialog, useRealtimeDeadline } from "@/components/repay-loan-dialog";
 import { LoanTimeline } from "@/components/loan-timeline";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({

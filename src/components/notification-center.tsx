@@ -45,7 +45,7 @@ import {
 import { useWebPush } from "@/hooks/use-web-push";
 import { useAppConfig } from "@/lib/config-context";
 import { useUrlBooleanState, useUrlStringState } from "@/lib/use-url-search-state";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 
 export function NotificationBell() {
   const navigate = useNavigate();

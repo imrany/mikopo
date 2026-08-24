@@ -36,7 +36,7 @@ import {
 import { loginSchema, registerSchema } from "@/lib/schemas";
 import { normalizePhone } from "@/lib/format";
 import { useSetupStatus } from "@/lib/use-setup-status";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 const heroImg = "/hero-image.png";
 
 const searchSchema = z

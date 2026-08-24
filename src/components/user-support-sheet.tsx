@@ -46,7 +46,7 @@ import {
   getSupportTicketDetails,
   addSupportResponse,
 } from "@/lib/support.functions";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { useUrlBooleanState, useUrlStringState } from "@/lib/use-url-search-state";
 
 export function UserSupportDialog({

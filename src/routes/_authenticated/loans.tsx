@@ -34,7 +34,7 @@ import {
   requestLoan,
   respondToGuarantee,
 } from "@/lib/loans.functions";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
 import { formatKes } from "@/lib/format";
 import { useRealtimeTable } from "@/hooks/use-realtime";
@@ -47,10 +47,12 @@ import { getDarajaEnvironment } from "@/lib/admin.functions";
 import { getPublicBusinessConfig } from "@/lib/account.functions";
 import { useAppConfig } from "@/lib/config-context";
 import BackButton from "@/components/back-button";
+import { useUrlStringState } from "@/lib/use-url-search-state";
 
 const loansSearchSchema = z
   .object({
     tab: z.string().optional(),
+    repayLoanId: z.string().optional(),
   })
   .passthrough();
 
@@ -156,6 +158,7 @@ function LoansPage() {
   const limit = Number(profile?.loan_limit ?? 0);
 
   const { tab: tabId } = Route.useSearch();
+  const [repayLoanId, setRepayLoanId] = useUrlStringState("repayLoanId");
   const [selectedId, setSelectedId] = useState<string | null>(tabId || null);
   const [amount, setAmount] = useState("");
   const [purpose, setPurpose] = useState("");
@@ -207,7 +210,7 @@ function LoansPage() {
     };
   }, [amount, selected]);
 
-  const loans = centerQuery.data?.loans ?? [];
+  const loans = useMemo(() => centerQuery.data?.loans ?? [], [centerQuery.data?.loans]);
   const guaranteeing = centerQuery.data?.guaranteeing ?? [];
 
   const defaultedLoan = loans.find(
@@ -221,6 +224,14 @@ function LoansPage() {
   );
 
   const activeLoan = defaultedLoan || loans.find((l: any) => OPEN_STATUSES.includes(l.status));
+
+  const repayingLoan = useMemo(() => {
+    if (!repayLoanId) return null;
+    return (
+      loans.find((l: any) => l.id === repayLoanId) ||
+      (activeLoan?.id === repayLoanId ? activeLoan : null)
+    );
+  }, [loans, activeLoan, repayLoanId]);
 
   const requestMutation = useMutation({
     mutationFn: async () => {
@@ -406,19 +417,15 @@ function LoansPage() {
                 </p>
               </div>
               {(activeLoan.status === "active" || activeLoan.status === "defaulted") && (
-                <RepayLoanDialog
-                  loan={activeLoan}
-                  trigger={
-                    <Button
-                      variant={activeLoan.status === "defaulted" ? "destructive" : "gold"}
-                      size="sm"
-                      className="shrink-0 gap-1.5 font-semibold"
-                    >
-                      <Wallet className="size-4" />{" "}
-                      {activeLoan.status === "defaulted" ? "Repay Defaulted Loan" : "Repay Loan"}
-                    </Button>
-                  }
-                />
+                <Button
+                  variant={activeLoan.status === "defaulted" ? "destructive" : "gold"}
+                  size="sm"
+                  className="shrink-0 gap-1.5 font-semibold"
+                  onClick={() => setRepayLoanId(activeLoan.id)}
+                >
+                  <Wallet className="size-4" />{" "}
+                  {activeLoan.status === "defaulted" ? "Repay Defaulted Loan" : "Repay Loan"}
+                </Button>
               )}
             </CardContent>
           </Card>
@@ -816,15 +823,15 @@ function LoansPage() {
                       )}
                       {(loan.status === "active" || loan.status === "defaulted") && (
                         <div className="pt-2 flex flex-wrap items-center gap-2">
-                          <RepayLoanDialog
-                            loan={loan}
-                            trigger={
-                              <Button variant="gold" size="sm" className="gap-2 font-medium">
-                                <Wallet className="size-4" />
-                                Repay Loan ({formatKes(Math.max(0, outstanding))})
-                              </Button>
-                            }
-                          />
+                          <Button
+                            variant="gold"
+                            size="sm"
+                            className="gap-2 font-medium"
+                            onClick={() => setRepayLoanId(loan.id)}
+                          >
+                            <Wallet className="size-4" />
+                            Repay Loan ({formatKes(Math.max(0, outstanding))})
+                          </Button>
                         </div>
                       )}
                       <details
@@ -969,6 +976,18 @@ function LoansPage() {
               )}
             </div>
           </section>
+        )}
+
+        {repayingLoan && (
+          <RepayLoanDialog
+            loan={repayingLoan}
+            open={Boolean(repayLoanId && repayingLoan)}
+            onOpenChange={(open) => {
+              if (!open) {
+                setRepayLoanId(null);
+              }
+            }}
+          />
         )}
       </main>
     </div>

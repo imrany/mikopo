@@ -51,7 +51,7 @@ import {
   getSupportTicketDetails,
   addSupportResponse,
 } from "@/lib/support.functions";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { useUrlStringState, useUrlBooleanState } from "@/lib/use-url-search-state";
 
 export function SupportDesk() {
