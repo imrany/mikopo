@@ -18,6 +18,9 @@ import {
   History,
   Smartphone,
   ShieldCheck,
+  BellRing,
+  MailCheck,
+  SendHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 import { SiteHeader } from "@/components/site-header";
@@ -53,6 +56,7 @@ import {
   disburseLoan,
   getAdminLoanDetails,
 } from "@/lib/loans.functions";
+import { triggerOverdueDefaulterRemindersNow } from "@/lib/notifications.functions";
 import { formatKes } from "@/lib/format";
 import BackButton from "@/components/back-button";
 import { useUrlBooleanState, useUrlStringState } from "@/lib/use-url-search-state";
@@ -83,6 +87,7 @@ function AdminLoanDetailPage() {
   const disburseLoanFn = useServerFn(disburseLoan);
   const cancelLoanFn = useServerFn(cancelLoanByAdmin);
   const activateLoanFn = useServerFn(activateLoan);
+  const triggerDefaulterReminderFn = useServerFn(triggerOverdueDefaulterRemindersNow);
 
   // Rejection & Cancellation Modals
   const [rejectLoanDialogOpen, setRejectLoanDialogOpen] = useUrlBooleanState("rejectLoan");
@@ -158,6 +163,20 @@ function AdminLoanDetailPage() {
       }
       setRejectGuarantorId(null);
       setRejectGuarantorReason("");
+      void queryClient.invalidateQueries({ queryKey: ["admin-loan-details", loanId] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const sendDefaulterReminderMutation = useMutation({
+    mutationFn: () => triggerDefaulterReminderFn({ data: { forceAll: true } }),
+    onSuccess: (res) => {
+      toast.success(
+        res.remindersDispatched > 0
+          ? `Dispatched 24-hour overdue reminder notification and email successfully.`
+          : `Overdue reminder check complete (${res.totalDefaultersChecked} defaulters scanned).`,
+      );
       void queryClient.invalidateQueries({ queryKey: ["admin-loan-details", loanId] });
       void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
     },
@@ -492,6 +511,83 @@ function AdminLoanDetailPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* 24-Hour Overdue Defaulter Reminder Schedule (Only for Defaulted or Past-Due Loans) */}
+            {(loan.status === "defaulted" ||
+              (loan.status === "active" &&
+                loan.due_date &&
+                new Date(loan.due_date).getTime() < Date.now())) && (
+              <Card className="border-amber-500/30 bg-amber-500/5 shadow-soft">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <div className="space-y-1">
+                    <CardTitle className="text-base flex items-center gap-2 text-amber-900 dark:text-amber-300">
+                      <BellRing className="size-4 text-amber-600 dark:text-amber-400" />
+                      24-Hour Overdue Reminder Schedule
+                    </CardTitle>
+                    <CardDescription className="text-xs text-amber-800/80 dark:text-amber-400/80">
+                      Automated 24-hour recurring reminder cycle for loan defaulters via In-App
+                      Notifications & Email.
+                    </CardDescription>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className="border-amber-500/40 text-amber-700 bg-amber-500/10"
+                  >
+                    Recurring Every 24h
+                  </Badge>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-background/80 p-3 rounded-lg border border-amber-500/20">
+                    <div>
+                      <span className="text-muted-foreground block">Defaulter Status</span>
+                      <span className="font-semibold text-destructive flex items-center gap-1 mt-0.5">
+                        <AlertTriangle className="size-3.5" /> Overdue / Defaulted
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block">Last 24h Reminder Sent</span>
+                      <span className="font-medium text-foreground block mt-0.5">
+                        {loan.last_overdue_reminder_at
+                          ? new Date(loan.last_overdue_reminder_at).toLocaleString()
+                          : "Scheduled (Initial dispatch pending)"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block">Dispatch Channels</span>
+                      <span className="font-medium text-foreground flex items-center gap-2 mt-0.5">
+                        <span className="inline-flex items-center gap-1 text-emerald-600">
+                          <MailCheck className="size-3.5" /> Email
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-primary">
+                          <Smartphone className="size-3.5" /> In-App
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                    <p className="text-xs text-muted-foreground">
+                      Defaulters automatically receive high-priority reminders every 24 hours until
+                      the loan is settled.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={sendDefaulterReminderMutation.isPending}
+                      onClick={() => sendDefaulterReminderMutation.mutate()}
+                      className="gap-1.5 h-8 text-xs border-amber-500/30 hover:bg-amber-500/10"
+                    >
+                      {sendDefaulterReminderMutation.isPending ? (
+                        <LucideLoader className="size-3.5 animate-spin" />
+                      ) : (
+                        <SendHorizontal className="size-3.5 text-amber-600" />
+                      )}
+                      Dispatch 24h Reminder Now
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Guarantors Card */}
             <Card className="border-border/70 shadow-soft">

@@ -514,6 +514,14 @@ export async function reconcileOverdueLoans() {
         }
       }
     }
+
+    // 3. Automatically dispatch 24-hour overdue reminders for all loan defaulters
+    try {
+      const { send24HourOverdueDefaulterReminders } = await import("./notifications.server");
+      await send24HourOverdueDefaulterReminders();
+    } catch (notifErr) {
+      console.error("[reconcileOverdueLoans - 24hr reminder dispatch error]:", notifErr);
+    }
   } catch (err) {
     console.error("[reconcileOverdueLoans error]:", err);
   }

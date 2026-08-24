@@ -467,6 +467,84 @@ export async function sendUserDueReminder(data: {
   });
 }
 
+// 6b. User Alert: 24-Hour Overdue Defaulter Recurring Reminder
+export async function sendUserOverdueDefaulterReminder(data: {
+  userEmail: string;
+  userName: string;
+  loanId: string;
+  principal: number;
+  totalDue: number;
+  amountRepaid: number;
+  amountDue: number;
+  penaltyAmount: number;
+  penaltyCount?: number;
+  dailyPenaltyAmount?: number;
+  daysOverdue: number;
+  dueDateStr: string;
+}) {
+  const bName = await getActiveBusinessName();
+  const title = `24-Hour Overdue Notice: Loan #${data.loanId.slice(0, 8).toUpperCase()} in Default`;
+  const badge = `<span class="badge" style="background:#fee2e2; color:#991b1b; font-weight:700; padding:6px 12px; border-radius:4px; font-size:12px; display:inline-block; margin-bottom:12px;">DEFAULTED & OVERDUE (${data.daysOverdue} DAY${data.daysOverdue > 1 ? "S" : ""} LATE)</span>`;
+
+  const body = `
+    ${badge}
+    <p>Dear <strong>${data.userName}</strong>,</p>
+    <p>This is your automated <strong>24-hour overdue reminder</strong>. Your loan repayment was due on <strong>${data.dueDateStr}</strong> (${data.daysOverdue} day${data.daysOverdue > 1 ? "s" : ""} ago) and is currently in <strong>DEFAULT</strong> status.</p>
+    
+    <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:16px; margin:20px 0;">
+      <h3 style="margin:0 0 12px 0; color:#991b1b; font-size:15px;">Overdue Loan Statement:</h3>
+      <table style="width:100%; font-size:13px; border-collapse:collapse;">
+        <tr>
+          <td style="padding:6px 0; color:#64748b;">Loan Reference:</td>
+          <td style="padding:6px 0; font-weight:600; text-align:right;">#${data.loanId.slice(0, 8).toUpperCase()}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 0; color:#64748b;">Principal Amount:</td>
+          <td style="padding:6px 0; font-weight:600; text-align:right;">KES ${data.principal.toLocaleString()}</td>
+        </tr>
+        ${
+          data.penaltyAmount > 0
+            ? `
+        <tr>
+          <td style="padding:6px 0; color:#dc2626;">Accrued 24hr Default Penalties (${data.penaltyCount || 1}x applied):</td>
+          <td style="padding:6px 0; font-weight:700; color:#dc2626; text-align:right;">+ KES ${data.penaltyAmount.toLocaleString()}</td>
+        </tr>
+        `
+            : ""
+        }
+        ${
+          data.amountRepaid > 0
+            ? `
+        <tr>
+          <td style="padding:6px 0; color:#16a34a;">Amount Already Repaid:</td>
+          <td style="padding:6px 0; font-weight:600; color:#16a34a; text-align:right;">- KES ${data.amountRepaid.toLocaleString()}</td>
+        </tr>
+        `
+            : ""
+        }
+        <tr style="border-top:2px solid #fecaca;">
+          <td style="padding:10px 0 4px 0; font-weight:700; font-size:15px; color:#991b1b;">Total Outstanding Balance:</td>
+          <td style="padding:10px 0 4px 0; font-weight:700; font-size:17px; color:#991b1b; text-align:right;">KES ${data.amountDue.toLocaleString()}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:12px; margin-bottom:20px; font-size:12px; color:#92400e; line-height:1.5;">
+      <strong>⚠️ 24-Hour Penalty & Credit Warning:</strong> Default penalties continue to accrue automatically every 24 hours until your balance is fully settled. Continued default restricts new loan applications and guarantor requests.
+    </div>
+
+    <p>Please make an immediate repayment via M-Pesa to prevent additional daily penalties and restore your active account standing.</p>
+  `;
+
+  const html = renderEmailWrapper(title, body, bName);
+
+  return sendEmail({
+    to: data.userEmail,
+    subject: `[ACTION REQUIRED] ${bName}: 24-Hour Overdue Loan Notice (KES ${data.amountDue.toLocaleString()} Due)`,
+    html,
+  });
+}
+
 // 7. General Broadcast / News Email
 export async function sendBroadcastEmail(data: {
   recipients: string[];

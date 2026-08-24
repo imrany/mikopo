@@ -230,6 +230,58 @@ function matchesWhere(item: any, where: any): boolean {
   return true;
 }
 
+function populateIncludes(model: string, item: any, include?: any) {
+  if (!item || !include || typeof include !== "object") return item;
+  const clone = { ...item };
+
+  if (model === "loan") {
+    if (include.user) {
+      const u = memStore.profile?.find((p) => p.id === clone.userId);
+      clone.user = u ? { ...u } : null;
+    }
+    if (include.product) {
+      const p = memStore.loanProduct?.find((lp) => lp.id === clone.productId);
+      clone.product = p ? { ...p } : null;
+    }
+    if (include.guarantors) {
+      clone.guarantors = (memStore.loanGuarantor || []).filter((g) => g.loanId === clone.id);
+    }
+    if (include.mpesaTransactions) {
+      clone.mpesaTransactions = (memStore.mpesaTransaction || []).filter(
+        (t) => t.loanId === clone.id,
+      );
+    }
+    if (include.repayments) {
+      clone.repayments = (memStore.loanRepayment || []).filter((r) => r.loanId === clone.id);
+    }
+    if (include.statusEvents) {
+      clone.statusEvents = (memStore.loanStatusEvent || []).filter((s) => s.loanId === clone.id);
+    }
+  }
+
+  if (model === "profile") {
+    if (include.roles) {
+      clone.roles = (memStore.userRole || []).filter((r) => r.userId === clone.id);
+    }
+    if (include.loans) {
+      clone.loans = (memStore.loan || []).filter((l) => l.userId === clone.id);
+    }
+  }
+
+  if (model === "loanGuarantor") {
+    if (include.loan) {
+      const l = memStore.loan?.find((lo) => lo.id === clone.loanId);
+      clone.loan = l ? { ...l } : null;
+    }
+    if (include.guarantor) {
+      const g = memStore.profile?.find((p) => p.id === clone.guarantorId);
+      clone.guarantor = g ? { ...g } : null;
+    }
+  }
+
+  return clone;
+}
+
 function handleMemMethod(model: string, method: string, args: any = {}) {
   if (!memStore[model]) {
     memStore[model] = [];
@@ -239,18 +291,18 @@ function handleMemMethod(model: string, method: string, args: any = {}) {
   switch (method) {
     case "findFirst": {
       const item = collection.find((i) => matchesWhere(i, args?.where));
-      return item ? { ...item } : null;
+      return item ? populateIncludes(model, item, args?.include) : null;
     }
     case "findUnique": {
       const item = collection.find((i) => matchesWhere(i, args?.where));
-      return item ? { ...item } : null;
+      return item ? populateIncludes(model, item, args?.include) : null;
     }
     case "findMany": {
       let results = collection.filter((i) => matchesWhere(i, args?.where));
       if (args?.take && typeof args.take === "number") {
         results = results.slice(0, args.take);
       }
-      return results.map((i) => ({ ...i }));
+      return results.map((i) => populateIncludes(model, i, args?.include));
     }
     case "count": {
       const count = collection.filter((i) => matchesWhere(i, args?.where)).length;

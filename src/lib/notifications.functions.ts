@@ -141,8 +141,54 @@ export const subscribeNewsletter = createServerFn({ method: "POST" })
     return { ok: true as const, message: "Thank you for subscribing to updates!" };
   });
 
-// 6. Admin Manual Trigger for Due Date Reminders
+// 6. Admin Manual Trigger for Due Date & Overdue Defaulter Reminders
 export const triggerDueRemindersNow = createServerFn({ method: "POST" })
+  .middleware([requireCustomAuth])
+  .validator((input: unknown) =>
+    z
+      .object({
+        forceDefaulters: z.boolean().optional(),
+      })
+      .optional()
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { roles } = context;
+    if (!roles.includes("super_admin") && !roles.includes("staff")) {
+      throw new Error("Forbidden");
+    }
+
+    const { scanAndSendDueReminders } = await import("./notifications.server");
+    const result = await scanAndSendDueReminders({ forceDefaulters: data?.forceDefaulters });
+
+    return { ok: true as const, ...result };
+  });
+
+// 6b. Admin Manual Trigger Specifically for 24-Hour Overdue Defaulter Reminders
+export const triggerOverdueDefaulterRemindersNow = createServerFn({ method: "POST" })
+  .middleware([requireCustomAuth])
+  .validator((input: unknown) =>
+    z
+      .object({
+        forceAll: z.boolean().optional(),
+      })
+      .optional()
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { roles } = context;
+    if (!roles.includes("super_admin") && !roles.includes("staff")) {
+      throw new Error("Forbidden");
+    }
+
+    const { send24HourOverdueDefaulterReminders } = await import("./notifications.server");
+    const result = await send24HourOverdueDefaulterReminders({ forceAll: data?.forceAll });
+
+    return { ok: true as const, ...result };
+  });
+
+// 6c. Get Overdue Defaulters Summary for Admin
+export const getOverdueDefaultersStats = createServerFn({ method: "GET" })
   .middleware([requireCustomAuth])
   .handler(async ({ context }) => {
     const { roles } = context;
@@ -150,10 +196,62 @@ export const triggerDueRemindersNow = createServerFn({ method: "POST" })
       throw new Error("Forbidden");
     }
 
-    const { scanAndSendDueReminders } = await import("./notifications.server");
-    const result = await scanAndSendDueReminders();
+    const now = new Date();
+    const defaultedLoans = await prisma.loan.findMany({
+      where: {
+        OR: [{ status: "defaulted" }, { status: "active", dueDate: { lt: now } }],
+      },
+      include: {
+        user: {
+          select: { id: true, firstName: true, lastName: true, email: true, phone: true },
+        },
+      },
+      orderBy: { dueDate: "asc" },
+    });
 
-    return { ok: true as const, ...result };
+    const MS_PER_DAY = 24 * 60 * 60 * 1000;
+    const defaulters = defaultedLoans
+      .filter((l: any) => Number(l.totalDue) - Number(l.amountRepaid) > 0)
+      .map((l: any) => {
+        const remaining = Number(l.totalDue) - Number(l.amountRepaid);
+        const dueDate = l.dueDate ? new Date(l.dueDate) : new Date(l.createdAt);
+        const overdueDays = Math.max(
+          1,
+          Math.floor((now.getTime() - dueDate.getTime()) / MS_PER_DAY),
+        );
+        const lastReminder = l.lastOverdueReminderAt ? new Date(l.lastOverdueReminderAt) : null;
+        const msSinceLast = lastReminder ? now.getTime() - lastReminder.getTime() : Infinity;
+        const isReminderDueNow = msSinceLast >= MS_PER_DAY;
+        const nextReminderHours = isReminderDueNow
+          ? 0
+          : Math.ceil((MS_PER_DAY - msSinceLast) / (60 * 60 * 1000));
+
+        return {
+          id: l.id,
+          borrowerName:
+            `${l.user?.firstName || ""} ${l.user?.lastName || ""}`.trim() ||
+            l.user?.email ||
+            "Borrower",
+          borrowerEmail: l.user?.email || "",
+          borrowerPhone: l.disbursementPhone || l.user?.phone || "",
+          principal: Number(l.principal),
+          penaltyAmount: Number(l.penaltyAmount || 0),
+          totalDue: Number(l.totalDue),
+          amountRepaid: Number(l.amountRepaid),
+          outstandingBalance: remaining,
+          dueDateStr: dueDate.toISOString(),
+          overdueDays,
+          lastOverdueReminderAt: lastReminder ? lastReminder.toISOString() : null,
+          isReminderDueNow,
+          nextReminderHours,
+        };
+      });
+
+    return {
+      totalDefaulters: defaulters.length,
+      dueForReminderNow: defaulters.filter((d: any) => d.isReminderDueNow).length,
+      defaulters,
+    };
   });
 
 // 7. Get Public VAPID Key

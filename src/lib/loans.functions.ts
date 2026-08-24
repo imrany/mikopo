@@ -584,6 +584,9 @@ export const listAdminLoans = createServerFn({ method: "GET" })
         last_penalty_applied_at: l.lastPenaltyAppliedAt
           ? l.lastPenaltyAppliedAt.toISOString()
           : null,
+        last_overdue_reminder_at: l.lastOverdueReminderAt
+          ? l.lastOverdueReminderAt.toISOString()
+          : null,
         total_due: Number(l.totalDue),
         amount_repaid: Number(l.amountRepaid),
         status: l.status,
@@ -1621,6 +1624,9 @@ export const getAdminLoanDetails = createServerFn({ method: "POST" })
       penalty_count: loan.penaltyCount || 0,
       last_penalty_applied_at: loan.lastPenaltyAppliedAt
         ? loan.lastPenaltyAppliedAt.toISOString()
+        : null,
+      last_overdue_reminder_at: loan.lastOverdueReminderAt
+        ? loan.lastOverdueReminderAt.toISOString()
         : null,
       total_due: Number(loan.totalDue),
       amount_repaid: Number(loan.amountRepaid),

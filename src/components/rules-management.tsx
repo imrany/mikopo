@@ -12,6 +12,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   LucideLoader,
+  BellRing,
+  SendHorizontal,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -22,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getAdminRules, saveAdminRules } from "@/lib/admin.functions";
+import { triggerOverdueDefaulterRemindersNow } from "@/lib/notifications.functions";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
 import { useAppConfig } from "@/lib/config-context";
@@ -33,6 +36,22 @@ export function RulesManagement() {
 
   const getRulesFn = useServerFn(getAdminRules);
   const saveRulesFn = useServerFn(saveAdminRules);
+  const triggerDefaulterReminderFn = useServerFn(triggerOverdueDefaulterRemindersNow);
+
+  const triggerDefaulterReminderMutation = useMutation({
+    mutationFn: () => triggerDefaulterReminderFn({ data: { forceAll: false } }),
+    onSuccess: (res) => {
+      toast.success(
+        res.remindersDispatched > 0
+          ? `24-Hour Overdue Defaulter scan complete: Dispatched ${res.remindersDispatched} reminder notification(s) and email(s).`
+          : `Defaulter scan complete: All overdue defaulters are currently up to date on their 24h reminder schedule. (${res.totalDefaultersChecked} defaulters evaluated)`,
+      );
+      void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+    },
+    onError: (err: Error) =>
+      toast.error(err.message || "Failed to trigger overdue defaulter scan."),
+  });
 
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [lastAutoSavedAt, setLastAutoSavedAt] = useState<Date | null>(null);
@@ -407,6 +426,45 @@ export function RulesManagement() {
                     }
                   />
                   <span className="text-xs text-muted-foreground font-medium">Loan(s)</span>
+                </div>
+              </div>
+
+              {/* Rule 7: Automated 24-Hour Overdue Defaulter Reminders */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg border border-amber-500/30 bg-amber-500/5">
+                <div className="space-y-1 max-w-xl">
+                  <div className="flex items-center gap-2">
+                    <Label className="font-semibold text-sm flex items-center gap-1.5 text-amber-950 dark:text-amber-200">
+                      <BellRing className="size-4 text-amber-600 dark:text-amber-400" />
+                      Automated 24-Hour Overdue Defaulter Reminders
+                    </Label>
+                    <Badge
+                      variant="outline"
+                      className="border-amber-500/40 text-amber-700 bg-amber-500/10 text-xs"
+                    >
+                      Active (Every 24h)
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Continuously scans all defaulted and past-due loans every 24 hours. Dispatches
+                    high-priority In-App Notifications and email warnings containing outstanding
+                    balance breakdowns and direct one-click repayment actions.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={triggerDefaulterReminderMutation.isPending}
+                    onClick={() => triggerDefaulterReminderMutation.mutate()}
+                    className="gap-1.5 h-8 text-xs border-amber-500/30 hover:bg-amber-500/10"
+                  >
+                    {triggerDefaulterReminderMutation.isPending ? (
+                      <LucideLoader className="size-3.5 animate-spin" />
+                    ) : (
+                      <SendHorizontal className="size-3.5 text-amber-600" />
+                    )}
+                    Run 24h Defaulter Scan Now
+                  </Button>
                 </div>
               </div>
             </CardContent>

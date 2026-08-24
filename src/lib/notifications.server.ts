@@ -4,6 +4,7 @@ import {
   sendAdminNewLoanAlert,
   sendAdminNewUserAlert,
   sendUserDueReminder,
+  sendUserOverdueDefaulterReminder,
   sendUserLoanDisbursedAlert,
   sendUserLoanStatusUpdate,
   sendUserRepaymentReceipt,
@@ -342,16 +343,197 @@ export async function notifyRepaymentReceived(data: {
   });
 }
 
-// Automatic Due Date Scanner & Reminder Trigger
-export async function scanAndSendDueReminders() {
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+export interface OverdueReminderResult {
+  totalDefaultersChecked: number;
+  remindersDispatched: number;
+  skippedWithin24h: number;
+  details: Array<{
+    loanId: string;
+    borrowerName: string;
+    borrowerEmail: string;
+    daysOverdue: number;
+    outstandingBalance: number;
+    reminded: boolean;
+    reason?: string;
+  }>;
+}
+
+// 24-Hour Overdue Defaulter Reminder Dispatcher
+export async function send24HourOverdueDefaulterReminders(options?: {
+  forceAll?: boolean;
+}): Promise<OverdueReminderResult> {
+  const now = new Date();
+
+  // Find all loans with status 'defaulted'
+  const overdueLoans = await prisma.loan.findMany({
+    where: {
+      status: "defaulted",
+    },
+    include: {
+      user: {
+        select: { id: true, firstName: true, lastName: true, email: true, phone: true },
+      },
+      product: {
+        select: { id: true, name: true, penaltyRate: true },
+      },
+    },
+  });
+
+  // Also include active loans that have passed due date (in case not yet transitioned)
+  const activeOverdueLoans = await prisma.loan.findMany({
+    where: {
+      status: "active",
+      dueDate: { lt: now },
+    },
+    include: {
+      user: {
+        select: { id: true, firstName: true, lastName: true, email: true, phone: true },
+      },
+      product: {
+        select: { id: true, name: true, penaltyRate: true },
+      },
+    },
+  });
+
+  // Deduplicate by loan ID
+  const allDefaulterLoansMap = new Map<string, any>();
+  for (const l of [...overdueLoans, ...activeOverdueLoans]) {
+    allDefaulterLoansMap.set(l.id, l);
+  }
+  const allDefaulterLoans = Array.from(allDefaulterLoansMap.values());
+
+  let remindersDispatched = 0;
+  let skippedWithin24h = 0;
+  const details: OverdueReminderResult["details"] = [];
+
+  for (const loan of allDefaulterLoans) {
+    if (!loan.user) continue;
+
+    const totalDue = Number(loan.totalDue || 0);
+    const amountRepaid = Number(loan.amountRepaid || 0);
+    const principal = Number(loan.principal || 0);
+    const penaltyAmount = Number(loan.penaltyAmount || 0);
+    const remaining = totalDue - amountRepaid;
+
+    // If fully settled, no overdue reminder needed
+    if (remaining <= 0) continue;
+
+    const dueDate = loan.dueDate ? new Date(loan.dueDate) : new Date(loan.createdAt);
+    const overdueMs = Math.max(0, now.getTime() - dueDate.getTime());
+    const daysOverdue = Math.max(1, Math.floor(overdueMs / MS_PER_DAY));
+    const dueDateStr = dueDate.toLocaleDateString("en-KE", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+
+    const userName =
+      `${loan.user.firstName || ""} ${loan.user.lastName || ""}`.trim() || loan.user.email;
+
+    // Check 24-hour interval logic:
+    // A reminder is due if it was never sent (lastOverdueReminderAt is null)
+    // OR if at least 24 hours (MS_PER_DAY) has elapsed since lastOverdueReminderAt.
+    const lastReminder = loan.lastOverdueReminderAt ? new Date(loan.lastOverdueReminderAt) : null;
+    const msSinceLastReminder = lastReminder ? now.getTime() - lastReminder.getTime() : Infinity;
+
+    if (!options?.forceAll && msSinceLastReminder < MS_PER_DAY) {
+      skippedWithin24h++;
+      const hoursRemaining = Math.ceil((MS_PER_DAY - msSinceLastReminder) / (60 * 60 * 1000));
+      details.push({
+        loanId: loan.id,
+        borrowerName: userName,
+        borrowerEmail: loan.user.email,
+        daysOverdue,
+        outstandingBalance: remaining,
+        reminded: false,
+        reason: `Last reminder sent ${Math.floor(msSinceLastReminder / (60 * 60 * 1000))}h ago. Next 24h cycle in ~${hoursRemaining}h.`,
+      });
+      continue;
+    }
+
+    // 1. Create In-App Notification & Real-Time Push
+    await createInAppNotification({
+      userId: loan.user.id,
+      title: `24-Hour Overdue Notice: Loan #${loan.id.slice(0, 8).toUpperCase()}`,
+      message: `Your loan of KES ${principal.toLocaleString()} is ${daysOverdue} day${daysOverdue > 1 ? "s" : ""} overdue (Status: DEFAULTED). Outstanding balance: KES ${remaining.toLocaleString()}${penaltyAmount > 0 ? ` (includes KES ${penaltyAmount.toLocaleString()} default penalties)` : ""}. Please make an immediate M-Pesa repayment to prevent further 24hr default penalties.`,
+      type: "due_reminder",
+      link: "/loans",
+    });
+
+    // 2. Dispatch High-Priority Email Reminder
+    await sendUserOverdueDefaulterReminder({
+      userEmail: loan.user.email,
+      userName,
+      loanId: loan.id,
+      principal,
+      totalDue,
+      amountRepaid,
+      amountDue: remaining,
+      penaltyAmount,
+      penaltyCount: loan.penaltyCount,
+      daysOverdue,
+      dueDateStr,
+    });
+
+    // 3. Update loan record with lastOverdueReminderAt timestamp
+    await prisma.loan.update({
+      where: { id: loan.id },
+      data: {
+        lastOverdueReminderAt: now,
+      },
+    });
+
+    // 4. Log status event for audit trail
+    try {
+      await prisma.loanStatusEvent.create({
+        data: {
+          loanId: loan.id,
+          actorId: null,
+          status: "defaulted",
+          note: `24-hour recurring overdue reminder sent to borrower (Email & In-App Notice). Overdue: ${daysOverdue} day(s), Balance: KES ${remaining.toLocaleString()}.`,
+        },
+      });
+    } catch {
+      // ignore status event error if table constrained
+    }
+
+    remindersDispatched++;
+    details.push({
+      loanId: loan.id,
+      borrowerName: userName,
+      borrowerEmail: loan.user.email,
+      daysOverdue,
+      outstandingBalance: remaining,
+      reminded: true,
+      reason: "24-hour overdue reminder dispatched successfully.",
+    });
+  }
+
+  return {
+    totalDefaultersChecked: allDefaulterLoans.length,
+    remindersDispatched,
+    skippedWithin24h,
+    details,
+  };
+}
+
+// Automatic Due Date & 24hr Overdue Scanner & Reminder Trigger
+export async function scanAndSendDueReminders(options?: { forceDefaulters?: boolean }) {
   const now = new Date();
   const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-  // Find active loans due within 2 days or overdue
-  const activeLoans = await prisma.loan.findMany({
+  // 1. Process 24-Hour Overdue Defaulter Reminders
+  const overdueResult = await send24HourOverdueDefaulterReminders({
+    forceAll: options?.forceDefaulters,
+  });
+
+  // 2. Find active loans due within the next 24 hours (not yet overdue)
+  const activeUpcomingLoans = await prisma.loan.findMany({
     where: {
       status: "active",
-      dueDate: { lte: tomorrow },
+      dueDate: { gte: now, lte: tomorrow },
     },
     include: {
       user: {
@@ -360,27 +542,29 @@ export async function scanAndSendDueReminders() {
     },
   });
 
-  let count = 0;
-  for (const loan of activeLoans) {
-    if (!loan.dueDate) continue;
+  let upcomingCount = 0;
+  for (const loan of activeUpcomingLoans) {
+    if (!loan.dueDate || !loan.user) continue;
 
     const remaining = Number(loan.totalDue) - Number(loan.amountRepaid);
     if (remaining <= 0) continue;
 
     const dueMs = new Date(loan.dueDate).getTime() - now.getTime();
-    const daysLeft = Math.ceil(dueMs / (1000 * 60 * 60 * 24));
+    const daysLeft = Math.max(0, Math.ceil(dueMs / (1000 * 60 * 60 * 24)));
 
-    const userName = `${loan.user.firstName} ${loan.user.lastName}`.trim() || loan.user.email;
-    const dueDateStr = new Date(loan.dueDate).toLocaleDateString("en-KE");
+    const userName =
+      `${loan.user.firstName || ""} ${loan.user.lastName || ""}`.trim() || loan.user.email;
+    const dueDateStr = new Date(loan.dueDate).toLocaleDateString("en-KE", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
 
     // Create in-app notification
     await createInAppNotification({
       userId: loan.user.id,
-      title: daysLeft < 0 ? "Loan Overdue Notice" : "Upcoming Loan Repayment Due",
-      message:
-        daysLeft < 0
-          ? `Your loan balance of KES ${remaining.toLocaleString()} is overdue (${Math.abs(daysLeft)} days late). Please repay to avoid penalties.`
-          : `Your loan payment of KES ${remaining.toLocaleString()} is due on ${dueDateStr}.`,
+      title: "Upcoming Loan Repayment Due",
+      message: `Your loan payment of KES ${remaining.toLocaleString()} is due on ${dueDateStr} (${daysLeft === 0 ? "today" : `in ${daysLeft} day(s)`}).`,
       type: "due_reminder",
       link: "/loans",
     });
@@ -395,8 +579,15 @@ export async function scanAndSendDueReminders() {
       daysLeft,
     });
 
-    count++;
+    upcomingCount++;
   }
 
-  return { scanned: activeLoans.length, remindersSent: count };
+  return {
+    scanned: activeUpcomingLoans.length + overdueResult.totalDefaultersChecked,
+    upcomingRemindersSent: upcomingCount,
+    overdueDefaulterRemindersSent: overdueResult.remindersDispatched,
+    overdueDefaultersSkippedWithin24h: overdueResult.skippedWithin24h,
+    totalRemindersSent: upcomingCount + overdueResult.remindersDispatched,
+    overdueDetails: overdueResult.details,
+  };
 }

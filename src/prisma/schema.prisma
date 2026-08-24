@@ -201,6 +201,7 @@ model Loan {
   penaltyAmount        Decimal    @default(0) @map("penalty_amount")
   penaltyCount         Int        @default(0) @map("penalty_count")
   lastPenaltyAppliedAt DateTime?  @map("last_penalty_applied_at")
+  lastOverdueReminderAt DateTime? @map("last_overdue_reminder_at")
   totalDue             Decimal    @default(0) @map("total_due")
   amountRepaid         Decimal    @default(0) @map("amount_repaid")
   status               LoanStatus @default(pending_guarantors)

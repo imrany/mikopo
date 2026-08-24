@@ -3,6 +3,10 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { getUploadedFileResponse } from "./lib/storage.server";
+import { initBackgroundScheduler } from "./lib/scheduler.server";
+
+// Start periodic background 24h overdue reminder & loan maintenance scheduler
+initBackgroundScheduler();
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
