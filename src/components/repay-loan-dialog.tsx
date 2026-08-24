@@ -9,6 +9,7 @@ import {
   AlertCircle,
   MoreHorizontal,
   ChevronRight,
+  ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,6 @@ import { formatKes } from "@/lib/format";
 import { startRepayment } from "@/lib/loans.functions";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useUrlStringState } from "@/lib/use-url-search-state";
-import { cn } from "@/lib/utils";
 
 export interface RepayLoanDialogProps {
   loan: {
@@ -279,66 +279,71 @@ function RepayLoanFormBody({
           </span>
         </div>
 
-        <div className="border-t border-border/40 pt-2">
-          <button
-            type="button"
-            onClick={() => setShowFinancialDetails((prev) => !prev)}
-            className="w-full flex items-center justify-between text-xs text-muted-foreground hover:text-foreground transition-colors group cursor-pointer py-0.5"
-            aria-expanded={showFinancialDetails}
-          >
-            <span className="flex items-center gap-1.5 font-medium text-foreground/80 group-hover:text-foreground">
-              <MoreHorizontal className="size-4 text-primary" />
-              <span>{showFinancialDetails ? "Hide balance breakdown" : "Balance breakdown"}</span>
-            </span>
-            <span className="flex items-center gap-1 text-[11px] text-muted-foreground font-mono">
-              {!showFinancialDetails && (
+        {!showFinancialDetails ? (
+          <div className="border-t border-border/40 pt-2">
+            <button
+              type="button"
+              onClick={() => setShowFinancialDetails(true)}
+              className="w-full flex items-center justify-between text-xs text-muted-foreground hover:text-foreground transition-colors group cursor-pointer py-0.5"
+              aria-expanded={false}
+            >
+              <span className="flex items-center gap-1.5 font-medium text-foreground/80 group-hover:text-foreground">
+                <MoreHorizontal className="size-4 text-primary" />
+                <span>Balance breakdown</span>
+              </span>
+              <span className="flex items-center gap-1 text-[11px] text-muted-foreground font-mono">
                 <span className="font-semibold text-primary">{formatKes(outstanding)}</span>
-              )}
-              <ChevronRight
-                className={cn(
-                  "size-3.5 transition-transform duration-200",
-                  showFinancialDetails && "rotate-90",
-                )}
-              />
-            </span>
-          </button>
+                <ChevronRight className="size-3.5" />
+              </span>
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between border-t border-border/40 pt-2 text-xs">
+              <span className="text-muted-foreground">Total Repayable</span>
+              <span className="font-medium text-foreground">
+                {formatKes(Number(loan.total_due))}
+              </span>
+            </div>
 
-          {showFinancialDetails && (
-            <div className="space-y-2 pt-2.5 mt-1 border-t border-border/30">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Total Repayable</span>
-                <span className="font-medium text-foreground">
-                  {formatKes(Number(loan.total_due))}
+            {Number(loan.penalty_amount || 0) > 0 && (
+              <div className="flex items-center justify-between border-t border-destructive/30 bg-destructive/10 -mx-3.5 px-3.5 py-1.5 text-xs text-destructive font-medium">
+                <span className="flex items-center gap-1">
+                  <AlertCircle className="size-3.5" />
+                  Default Penalty ({loan.penalty_count || 1} x 24h cycle
+                  {(loan.penalty_count || 1) > 1 ? "s" : ""}
+                </span>
+                <span className="font-bold">+{formatKes(Number(loan.penalty_amount))}</span>
+              </div>
+            )}
+
+            {Number(loan.amount_repaid) > 0 && (
+              <div className="flex items-center justify-between border-t border-border/40 pt-2 text-xs">
+                <span className="text-muted-foreground">Amount Repaid So Far</span>
+                <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                  {formatKes(Number(loan.amount_repaid))}
                 </span>
               </div>
+            )}
 
-              {Number(loan.penalty_amount || 0) > 0 && (
-                <div className="flex items-center justify-between border-t border-destructive/30 bg-destructive/10 -mx-3.5 px-3.5 py-1.5 text-xs text-destructive font-medium">
-                  <span className="flex items-center gap-1">
-                    <AlertCircle className="size-3.5" />
-                    Default Penalty ({loan.penalty_count || 1} x 24h cycle
-                    {(loan.penalty_count || 1) > 1 ? "s" : ""})
-                  </span>
-                  <span className="font-bold">+{formatKes(Number(loan.penalty_amount))}</span>
-                </div>
-              )}
-
-              {Number(loan.amount_repaid) > 0 && (
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Amount Repaid So Far</span>
-                  <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                    {formatKes(Number(loan.amount_repaid))}
-                  </span>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between text-xs pt-1 border-t border-border/30">
-                <span className="text-muted-foreground font-medium">Current Outstanding</span>
-                <span className="font-semibold text-sm text-primary">{formatKes(outstanding)}</span>
-              </div>
+            <div className="flex items-center justify-between border-t border-border/40 pt-2 text-xs">
+              <span className="text-muted-foreground font-medium">Current Outstanding</span>
+              <span className="font-semibold text-sm text-primary">{formatKes(outstanding)}</span>
             </div>
-          )}
-        </div>
+
+            <div className="border-t border-border/40 pt-1.5 -mb-1 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setShowFinancialDetails(false)}
+                className="flex items-center justify-center p-1 text-muted-foreground/80 hover:text-foreground transition-colors cursor-pointer rounded hover:bg-background/40"
+                title="Collapse balance breakdown"
+                aria-label="Collapse balance breakdown"
+              >
+                <ChevronUp className="size-4" />
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       <form
