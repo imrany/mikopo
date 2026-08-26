@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LexicalRichEditor } from "@/components/lexical-editor";
 import {
   Select,
   SelectContent,
@@ -552,26 +553,31 @@ export function SupportDesk() {
                 ) : (
                   <form onSubmit={handleSendAgentReply} className="space-y-2">
                     <Label className="text-xs font-semibold ml-1">Reply to Customer</Label>
-                    <div className="flex gap-2 p-1">
-                      <Input
-                        placeholder="Type official response to user..."
+                    <div className="space-y-2">
+                      <LexicalRichEditor
+                        id="agent-reply"
+                        placeholder="Type official response or instructions to user..."
                         value={agentReply}
-                        onChange={(e) => setAgentReply(e.target.value)}
+                        mode="markdown"
+                        minHeight="100px"
+                        showIconPicker={false}
                         disabled={agentReplyMutation.isPending}
-                        className="text-xs"
+                        onChange={(val) => setAgentReply(val)}
                       />
-                      <Button
-                        type="submit"
-                        disabled={agentReplyMutation.isPending || !agentReply.trim()}
-                        className="gap-1 px-4 self-end"
-                      >
-                        {agentReplyMutation.isPending ? (
-                          <LucideLoader className="size-4 animate-spin" />
-                        ) : (
-                          <Send className="size-4" />
-                        )}
-                        Send
-                      </Button>
+                      <div className="flex justify-end">
+                        <Button
+                          type="submit"
+                          disabled={agentReplyMutation.isPending || !agentReply.trim()}
+                          className="gap-1 px-4"
+                        >
+                          {agentReplyMutation.isPending ? (
+                            <LucideLoader className="size-4 animate-spin" />
+                          ) : (
+                            <Send className="size-4" />
+                          )}
+                          Send Reply
+                        </Button>
+                      </div>
                     </div>
                   </form>
                 )}

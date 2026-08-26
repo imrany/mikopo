@@ -42,7 +42,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
+import { LexicalRichEditor } from "@/components/lexical-editor";
 import {
   Table,
   TableBody,
@@ -609,18 +609,16 @@ function AdminUserDetailPage() {
                         >
                           Email Body Message <span className="text-destructive">*</span>
                         </Label>
-                        <span className="text-[10px] text-muted-foreground">
-                          Separate paragraphs with line breaks
-                        </span>
                       </div>
-                      <Textarea
+                      <LexicalRichEditor
                         id="email-body"
-                        rows={4}
-                        placeholder="Type the message content to the borrower..."
+                        placeholder="Type the formatted message content to the borrower..."
                         value={emailBody}
-                        onChange={(e) => setEmailBody(e.target.value)}
+                        mode="html"
+                        minHeight="160px"
+                        showIconPicker={true}
                         disabled={sendCustomEmailMutation.isPending}
-                        className="text-xs leading-relaxed resize-y"
+                        onChange={(val) => setEmailBody(val)}
                       />
                     </div>
 

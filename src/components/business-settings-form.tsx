@@ -22,7 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { DEFAULT_TERMS_MARKDOWN, DEFAULT_PRIVACY_MARKDOWN } from "@/lib/default-policies";
-import { IconAutocompleteTextarea } from "@/components/icon-autocomplete-editor";
+import { LexicalRichEditor } from "@/components/lexical-editor";
 import {
   PRESET_THEME_PALETTES,
   ORIGINAL_DEFAULT_PALETTE,
@@ -952,14 +952,16 @@ export function BusinessSettingsForm() {
                       <MarkdownRenderer content={termsContent} />
                     </div>
                   ) : (
-                    <IconAutocompleteTextarea
+                    <LexicalRichEditor
                       id="terms-content"
                       value={termsContent}
-                      onValueChange={(val) => {
+                      mode="markdown"
+                      minHeight="280px"
+                      showIconPicker={true}
+                      onChange={(val) => {
                         setTermsContent(val);
                         triggerDebouncedAutoSave({ termsContent: val }, 1000);
                       }}
-                      rows={14}
                     />
                   )}
                 </div>
@@ -1016,14 +1018,16 @@ export function BusinessSettingsForm() {
                       <MarkdownRenderer content={privacyContent} />
                     </div>
                   ) : (
-                    <IconAutocompleteTextarea
+                    <LexicalRichEditor
                       id="privacy-content"
                       value={privacyContent}
-                      onValueChange={(val) => {
+                      mode="markdown"
+                      minHeight="280px"
+                      showIconPicker={true}
+                      onChange={(val) => {
                         setPrivacyContent(val);
                         triggerDebouncedAutoSave({ privacyContent: val }, 1000);
                       }}
-                      rows={14}
                     />
                   )}
                 </div>

@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
+import { LexicalRichEditor } from "@/components/lexical-editor";
 import {
   deleteAdminSubscriber,
   getAdminSmtpSettings,
@@ -516,13 +516,14 @@ export function SmtpSettingsForm() {
 
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="message">Email Content / Update Details</Label>
-                <Textarea
+                <LexicalRichEditor
                   id="message"
-                  rows={6}
                   placeholder="Write your email content or announcement message here..."
                   value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  required
+                  mode="html"
+                  minHeight="220px"
+                  showIconPicker={true}
+                  onChange={(val) => setMessage(val)}
                 />
               </div>
             </div>

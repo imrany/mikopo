@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { LexicalRichEditor } from "@/components/lexical-editor";
 import { deleteTestimonial, listMyTestimonials, submitTestimonial } from "@/lib/loans.functions";
 import { fireCelebrationConfetti } from "@/lib/confetti";
 import { useAppConfig } from "@/lib/config-context";
@@ -130,14 +130,14 @@ export function UserTestimonialForm() {
 
           <div className="space-y-2">
             <Label htmlFor="t-content">Your Review / Story</Label>
-            <Textarea
+            <LexicalRichEditor
               id="t-content"
               placeholder={`How ${businessName} helped grow your business or meet urgent financial needs...`}
-              rows={3}
-              minLength={10}
-              maxLength={500}
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              mode="text"
+              minHeight="110px"
+              showIconPicker={false}
+              onChange={(val) => setContent(val)}
             />
           </div>
 

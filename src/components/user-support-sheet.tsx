@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { LexicalRichEditor } from "@/components/lexical-editor";
 import {
   Select,
   SelectContent,
@@ -456,13 +456,14 @@ export function UserSupportDialog({
                     <Label htmlFor="message" className="text-xs">
                       Describe Your Problem in Detail *
                     </Label>
-                    <Textarea
+                    <LexicalRichEditor
                       id="message"
-                      rows={4}
                       placeholder="Please explain what happened, including any relevant phone numbers or transaction IDs..."
                       value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      required
+                      mode="markdown"
+                      minHeight="140px"
+                      showIconPicker={false}
+                      onChange={(val) => setMessage(val)}
                     />
                   </div>
 
