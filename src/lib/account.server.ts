@@ -138,19 +138,37 @@ export async function createFirstAdmin(input: SetupInput) {
       update: {},
     });
 
-    await tx.businessSettings.create({
-      data: {
-        businessName: input.businessName,
-        businessLocation: input.businessLocation,
-        supportEmail: input.supportEmail || null,
-        supportPhone: input.supportPhone || null,
-        mpesaShortcode: input.mpesaShortcode || null,
-        mpesaAccountNumber: input.mpesaAccountNumber || null,
-        mpesaEnvironment: input.mpesaEnvironment || "sandbox",
-        mpesaCallbackUrl: input.mpesaCallbackUrl || null,
-        setupCompleted: true,
-      },
-    });
+    const existingSettings = await tx.businessSettings.findFirst();
+    if (existingSettings) {
+      await tx.businessSettings.update({
+        where: { id: existingSettings.id },
+        data: {
+          businessName: input.businessName,
+          businessLocation: input.businessLocation,
+          supportEmail: input.supportEmail || null,
+          supportPhone: input.supportPhone || null,
+          mpesaShortcode: input.mpesaShortcode || null,
+          mpesaAccountNumber: input.mpesaAccountNumber || null,
+          mpesaEnvironment: input.mpesaEnvironment || "sandbox",
+          mpesaCallbackUrl: input.mpesaCallbackUrl || null,
+          setupCompleted: true,
+        },
+      });
+    } else {
+      await tx.businessSettings.create({
+        data: {
+          businessName: input.businessName,
+          businessLocation: input.businessLocation,
+          supportEmail: input.supportEmail || null,
+          supportPhone: input.supportPhone || null,
+          mpesaShortcode: input.mpesaShortcode || null,
+          mpesaAccountNumber: input.mpesaAccountNumber || null,
+          mpesaEnvironment: input.mpesaEnvironment || "sandbox",
+          mpesaCallbackUrl: input.mpesaCallbackUrl || null,
+          setupCompleted: true,
+        },
+      });
+    }
 
     await tx.auditLog.create({
       data: {

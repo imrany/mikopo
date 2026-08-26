@@ -34,7 +34,7 @@ export const completeSetup = createServerFn({ method: "POST" })
     try {
       const { adminExists, setupCompleted, createFirstAdmin } = await import("./account.server");
       const [hasAdmin, completed] = await Promise.all([adminExists(), setupCompleted()]);
-      if (hasAdmin || completed) {
+      if (hasAdmin && completed) {
         return { ok: false as const, error: "Setup has already been completed for this business." };
       }
       await createFirstAdmin(data);
