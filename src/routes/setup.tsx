@@ -96,7 +96,7 @@ const steps = [
   {
     title: "Super Administrator",
     shortTitle: "Admin",
-    description: "Create the primary administrator account for the console",
+    description: "Create the initial administrator account for the console",
     icon: UserCog,
     optional: false,
   },
@@ -482,7 +482,7 @@ function SetupPage() {
             {step === 0 && (
               <div className="space-y-4">
                 <div className="rounded-lg border border-primary/20 bg-primary/5 p-3.5 text-xs text-muted-foreground">
-                  <strong className="text-foreground">Primary Super Admin:</strong> This account
+                  <strong className="text-foreground">Initial Super Admin:</strong> This account
                   will have unrestricted administrative privileges to manage all loans, products,
                   users, settings, and staff credentials.
                 </div>
