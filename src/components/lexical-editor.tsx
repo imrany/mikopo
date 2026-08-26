@@ -41,6 +41,7 @@ import {
   ListItemNode,
 } from "@lexical/list";
 import { LinkNode, AutoLinkNode, TOGGLE_LINK_COMMAND, $isLinkNode } from "@lexical/link";
+import { CodeNode, CodeHighlightNode } from "@lexical/code";
 import {
   $convertFromMarkdownString,
   $convertToMarkdownString,
@@ -97,6 +98,38 @@ const lexicalTheme = {
   },
   quote:
     "border-l-4 border-primary/70 pl-3 italic my-3 text-sm text-muted-foreground bg-primary/5 py-1 rounded-r",
+  code: "bg-muted/80 text-foreground font-mono text-xs p-3 rounded-md block overflow-x-auto my-2 border border-border/60",
+  codeHighlight: {
+    atrule: "text-blue-500",
+    attr: "text-cyan-500",
+    boolean: "text-purple-500",
+    builtin: "text-amber-500",
+    cdata: "text-gray-500",
+    char: "text-emerald-500",
+    class: "text-pink-500",
+    "class-name": "text-pink-500",
+    comment: "text-muted-foreground italic",
+    constant: "text-purple-500",
+    deleted: "text-destructive",
+    doctype: "text-gray-500",
+    entity: "text-yellow-500",
+    function: "text-blue-600 dark:text-blue-400",
+    important: "text-orange-500 font-bold",
+    inserted: "text-emerald-600 dark:text-emerald-400",
+    keyword: "text-purple-600 dark:text-purple-400 font-semibold",
+    number: "text-amber-600 dark:text-amber-400",
+    operator: "text-sky-500",
+    prolog: "text-gray-500",
+    property: "text-emerald-500",
+    punctuation: "text-muted-foreground",
+    regex: "text-red-500",
+    selector: "text-blue-500",
+    string: "text-emerald-600 dark:text-emerald-400",
+    symbol: "text-amber-500",
+    tag: "text-rose-500",
+    url: "text-sky-500 underline",
+    variable: "text-yellow-600 dark:text-yellow-400",
+  },
   text: {
     bold: "font-bold text-foreground",
     italic: "italic",
@@ -667,7 +700,16 @@ export function LexicalRichEditor({
   const initialConfig = {
     namespace: id || "LexicalEditor",
     theme: lexicalTheme,
-    nodes: [HeadingNode, QuoteNode, ListNode, ListItemNode, LinkNode, AutoLinkNode],
+    nodes: [
+      HeadingNode,
+      QuoteNode,
+      ListNode,
+      ListItemNode,
+      LinkNode,
+      AutoLinkNode,
+      CodeNode,
+      CodeHighlightNode,
+    ],
     onError(error: Error) {
       console.error("Lexical error:", error);
     },
