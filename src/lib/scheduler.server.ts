@@ -1,7 +1,14 @@
 let isSchedulerRunning = false;
+let isExecutionInProgress = false;
 let schedulerInterval: NodeJS.Timeout | null = null;
 
 export async function runOverdueAndReminderMaintenance() {
+  if (isExecutionInProgress) {
+    // Prevent overlapping execution if previous maintenance cycle is still running
+    return;
+  }
+
+  isExecutionInProgress = true;
   try {
     const { reconcileOverdueLoans, revertStuckDisbursingLoans } = await import("./loans.server");
     const { send24HourOverdueDefaulterReminders } = await import("./notifications.server");
@@ -21,27 +28,35 @@ export async function runOverdueAndReminderMaintenance() {
     }
   } catch (err) {
     console.error("[Scheduler Maintenance Error]:", err);
+  } finally {
+    isExecutionInProgress = false;
   }
 }
 
 export function initBackgroundScheduler() {
   if (isSchedulerRunning) return;
+  if (process.env.DISABLE_BACKGROUND_SCHEDULER === "true") {
+    console.log("[Scheduler] Background scheduler disabled by environment variable.");
+    return;
+  }
   isSchedulerRunning = true;
 
-  console.log("[Scheduler] Initializing 24-Hour Overdue Loan Reminder & Maintenance Job...");
+  const intervalMinutes = parseInt(process.env.SCHEDULER_INTERVAL_MINUTES || "10", 10);
+  const intervalMs = Math.max(1, isNaN(intervalMinutes) ? 10 : intervalMinutes) * 60 * 1000;
 
-  // Run initial scan shortly after startup
+  console.log(
+    `[Scheduler] Initializing 24-Hour Overdue Loan Reminder & Maintenance Job (Interval: ${intervalMinutes}m)...`,
+  );
+
+  // Run initial scan shortly after startup (5 seconds delay)
   setTimeout(() => {
     runOverdueAndReminderMaintenance().catch(console.error);
-  }, 3000);
+  }, 5000);
 
-  // Run periodic maintenance every 10 minutes to ensure 24h intervals are accurately respected
-  schedulerInterval = setInterval(
-    () => {
-      runOverdueAndReminderMaintenance().catch(console.error);
-    },
-    10 * 60 * 1000,
-  );
+  // Run periodic maintenance
+  schedulerInterval = setInterval(() => {
+    runOverdueAndReminderMaintenance().catch(console.error);
+  }, intervalMs);
 
   if (
     typeof schedulerInterval === "object" &&

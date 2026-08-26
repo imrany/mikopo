@@ -261,10 +261,25 @@ export async function saveUploadedImage({
   }
 }
 
+// In-memory LRU cache for hot/frequently served static and upload assets (< 3MB each)
+interface CachedFile {
+  buffer: Buffer;
+  contentType: string;
+  etag: string;
+  mtimeMs: number;
+}
+
+const fileMemoryCache = new Map<string, CachedFile>();
+const MAX_CACHED_FILES = 100;
+const MAX_CACHE_FILE_SIZE = 3 * 1024 * 1024; // 3MB
+
 /**
- * Reads and serves a file from the upload directory.
+ * Reads and serves a file from the upload directory with in-memory caching and 304 Not Modified support.
  */
-export async function getUploadedFileResponse(filename: string): Promise<Response> {
+export async function getUploadedFileResponse(
+  filename: string,
+  reqHeaders?: Headers,
+): Promise<Response> {
   const cleanName = sanitizeFilename(filename);
   if (!cleanName || cleanName === "." || cleanName === "..") {
     return new Response("Invalid file path", { status: 400 });
@@ -274,19 +289,72 @@ export async function getUploadedFileResponse(filename: string): Promise<Respons
   const filePath = path.join(dir, cleanName);
 
   try {
+    // Check if we have a valid cached version in memory
+    const cached = fileMemoryCache.get(cleanName);
+    if (cached) {
+      const clientEtag = reqHeaders?.get("if-none-match");
+      if (clientEtag && clientEtag === cached.etag) {
+        return new Response(null, {
+          status: 304,
+          headers: {
+            ETag: cached.etag,
+            "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+          },
+        });
+      }
+
+      return new Response(cached.buffer, {
+        status: 200,
+        headers: {
+          "Content-Type": cached.contentType,
+          "Content-Length": cached.buffer.length.toString(),
+          ETag: cached.etag,
+          "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+        },
+      });
+    }
+
     if (!fs.existsSync(filePath)) {
       return new Response("File Not Found", { status: 404 });
     }
 
+    const stat = await fs.promises.stat(filePath);
     const buffer = await fs.promises.readFile(filePath);
     const ext = path.extname(cleanName);
     const contentType = getMimeTypeFromExt(ext);
+    const etag = `W/"${stat.size.toString(16)}-${stat.mtimeMs.toString(16)}"`;
+
+    // Cache in memory if under max size
+    if (buffer.length <= MAX_CACHE_FILE_SIZE) {
+      if (fileMemoryCache.size >= MAX_CACHED_FILES) {
+        const oldestKey = fileMemoryCache.keys().next().value;
+        if (oldestKey) fileMemoryCache.delete(oldestKey);
+      }
+      fileMemoryCache.set(cleanName, {
+        buffer,
+        contentType,
+        etag,
+        mtimeMs: stat.mtimeMs,
+      });
+    }
+
+    const clientEtag = reqHeaders?.get("if-none-match");
+    if (clientEtag && clientEtag === etag) {
+      return new Response(null, {
+        status: 304,
+        headers: {
+          ETag: etag,
+          "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+        },
+      });
+    }
 
     return new Response(buffer, {
       status: 200,
       headers: {
         "Content-Type": contentType,
         "Content-Length": buffer.length.toString(),
+        ETag: etag,
         "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
       },
     });

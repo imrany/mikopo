@@ -103,9 +103,9 @@ docker compose logs -f app
 
 ---
 
-## 🔒 Setting up Nginx Reverse Proxy with SSL (HTTPS)
+## 🔒 Setting up Nginx Reverse Proxy with SSL, Gzip & High-Concurrency Upstreams
 
-For production use, route domain traffic through Nginx with free Let's Encrypt SSL certificates.
+For production use, route domain traffic through Nginx with free Let's Encrypt SSL certificates, connection keepalive, Gzip compression, and rate limiting to protect against traffic spikes.
 
 ### 1. Install Nginx and Certbot
 
@@ -114,20 +114,63 @@ sudo apt update
 sudo apt install -y nginx certbot python3-certbot-nginx
 ```
 
-### 2. Create Nginx Configuration
+### 2. Create Optimized Nginx Configuration
 
 ```bash
 sudo nano /etc/nginx/sites-available/mikopo
 ```
 
-Add the following block (replace `mikopo.example.com` with your domain):
+Add the following optimized configuration (replace `mikopo.example.com` with your actual domain):
 
 ```nginx
+# Rate limiting zones to protect auth and payment callback endpoints
+limit_req_zone $binary_remote_addr zone=auth_limit:10m rate=15r/m;
+limit_req_zone $binary_remote_addr zone=api_limit:10m rate=60r/s;
+
+# Upstream connection pool for persistent keepalive connections
+upstream mikopo_backend {
+    server 127.0.0.1:3000 max_fails=3 fail_timeout=10s;
+    keepalive 64;
+}
+
 server {
     server_name mikopo.example.com;
+    listen 80;
 
+    # Gzip Compression for fast delivery to mobile and desktop clients
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css text/xml application/json application/javascript application/xml+rss application/atom+xml image/svg+xml;
+
+    # Maximum file upload size (matches 15MB hero/logo image limit)
+    client_max_body_size 20M;
+
+    # Instant Healthcheck endpoint for VPS monitors & load balancers
+    location /healthz {
+        proxy_pass http://mikopo_backend/healthz;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        access_log off;
+    }
+
+    # Static uploads & cached assets
+    location /api/uploads/ {
+        proxy_pass http://mikopo_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+    }
+
+    # Main Application Proxy
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        limit_req zone=api_limit burst=100 nodelay;
+
+        proxy_pass http://mikopo_backend;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -136,6 +179,15 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
+
+        # Upstream proxy buffering for fast client delivery
+        proxy_buffering on;
+        proxy_buffer_size 128k;
+        proxy_buffers 4 256k;
+        proxy_busy_buffers_size 256k;
+        proxy_connect_timeout 15s;
+        proxy_read_timeout 60s;
+        proxy_send_timeout 60s;
     }
 }
 ```
@@ -154,7 +206,52 @@ sudo systemctl reload nginx
 sudo certbot --nginx -d mikopo.example.com -d www.mikopo.example.com
 ```
 
-Your app is now live securely at `https://mikopo.example.com`!
+---
+
+## ⚡ High-Concurrency VPS Performance Optimization
+
+To comfortably handle hundreds to thousands of concurrent client requests across multiple devices:
+
+### 1. Tune Database Connection Pooling in `.env`
+
+```env
+# Maximum pooled PostgreSQL connections (default: 30)
+DB_POOL_MAX=40
+
+# Minimum active warm connections (default: 3)
+DB_POOL_MIN=5
+
+# Scheduler check frequency in minutes (default: 10)
+SCHEDULER_INTERVAL_MINUTES=10
+```
+
+### 2. Linux VPS Kernel & Socket Tuning
+
+Increase Linux open file descriptor limits and network socket backlogs on your VPS:
+
+```bash
+# Add to /etc/security/limits.conf
+* soft nofile 65535
+* hard nofile 65535
+
+# Apply kernel network optimizations in /etc/sysctl.conf:
+sudo nano /etc/sysctl.conf
+```
+
+Append:
+
+```ini
+net.core.somaxconn = 65535
+net.ipv4.tcp_max_syn_backlog = 8192
+net.ipv4.ip_local_port_range = 1024 65535
+net.ipv4.tcp_tw_reuse = 1
+```
+
+Apply immediately:
+
+```bash
+sudo sysctl -p
+```
 
 ---
 

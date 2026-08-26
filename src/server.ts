@@ -49,6 +49,8 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+const isProd = process.env.NODE_ENV === "production";
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     const start = Date.now();
@@ -56,15 +58,34 @@ export default {
     const method = request.method;
     const pathname = url.pathname;
 
+    // 1. High-performance instant health check for Docker, Nginx, and VPS load balancers
+    if (pathname === "/healthz" || pathname === "/health" || pathname === "/api/health") {
+      return new Response(
+        JSON.stringify({
+          status: "ok",
+          env: isProd ? "production" : "development",
+          uptime: Math.floor(process.uptime()),
+          timestamp: Date.now(),
+        }),
+        {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            "cache-control": "no-store, no-cache, must-revalidate",
+          },
+        },
+      );
+    }
+
     try {
-      // Direct fast handling for uploaded asset files
+      // 2. Direct fast handling for uploaded asset files with ETag and 304 support
       if (
         method === "GET" &&
         (pathname.startsWith("/api/uploads/") || pathname.startsWith("/uploads/"))
       ) {
         const filename = pathname.split("/").pop() || "";
-        const fileResponse = await getUploadedFileResponse(filename);
-        if (fileResponse.status === 200) {
+        const fileResponse = await getUploadedFileResponse(filename, request.headers);
+        if (fileResponse.status === 200 || fileResponse.status === 304) {
           return fileResponse;
         }
       }
@@ -74,19 +95,26 @@ export default {
       const normalized = await normalizeCatastrophicSsrResponse(response);
       const duration = Date.now() - start;
 
-      // Log API and public routes for debugging
+      // 3. Optimized logging: In production, only log APIs, payment callbacks, errors, or slow requests
       if (
+        !isProd ||
         pathname.startsWith("/api/") ||
         pathname.includes("callback") ||
-        pathname.includes("result")
+        pathname.includes("result") ||
+        duration > 800 ||
+        normalized.status >= 400
       ) {
-        console.log(
-          `[API Route Log] ${method} ${pathname} -> Status ${normalized.status} (${duration}ms)`,
-        );
-      } else {
-        console.log(
-          `[HTTP Request Log] ${method} ${pathname} -> Status ${normalized.status} (${duration}ms)`,
-        );
+        if (
+          pathname.startsWith("/api/") ||
+          pathname.includes("callback") ||
+          pathname.includes("result")
+        ) {
+          console.log(`[API Route] ${method} ${pathname} -> ${normalized.status} (${duration}ms)`);
+        } else if (duration > 800) {
+          console.warn(
+            `[Slow Request] ${method} ${pathname} -> ${normalized.status} (${duration}ms)`,
+          );
+        }
       }
 
       return normalized;
