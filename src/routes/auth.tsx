@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import {
   LucideLoader,
@@ -32,6 +32,7 @@ import {
   verifyRegistrationEmailFn,
   resendRegistrationCodeFn,
   getPublicBusinessConfig,
+  getSetupStatus,
 } from "@/lib/account.functions";
 import { loginSchema, registerSchema } from "@/lib/schemas";
 import { normalizePhone } from "@/lib/format";
@@ -48,6 +49,12 @@ const searchSchema = z
 
 export const Route = createFileRoute("/auth")({
   validateSearch: searchSchema,
+  beforeLoad: async () => {
+    const status = await getSetupStatus();
+    if (status.needsSetup) {
+      throw redirect({ to: "/setup" });
+    }
+  },
   loader: async () => {
     try {
       const config = await getPublicBusinessConfig();

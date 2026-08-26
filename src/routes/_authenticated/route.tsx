@@ -1,10 +1,17 @@
 import { useEffect } from "react";
-import { Outlet, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Outlet, createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { LucideLoader } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { getSetupStatus } from "@/lib/account.functions";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
+  beforeLoad: async () => {
+    const status = await getSetupStatus();
+    if (status.needsSetup) {
+      throw redirect({ to: "/setup" });
+    }
+  },
   component: AuthenticatedLayout,
 });
 

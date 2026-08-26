@@ -127,7 +127,7 @@ function SetupPage() {
       if (typeof window !== "undefined") {
         try {
           localStorage.removeItem("mikopo_cached_business_config");
-        } catch (_err) {
+        } catch {
           // ignore cache clearing failure
         }
       }

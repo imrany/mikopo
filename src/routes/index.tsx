@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import {
   ArrowRight,
   BadgeCheck,
@@ -27,7 +27,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 const heroImg = "/hero-image.png";
 import { useAuth } from "@/lib/auth-context";
 import { useSetupStatus } from "@/lib/use-setup-status";
-import { getPublicBusinessConfig } from "@/lib/account.functions";
+import { getPublicBusinessConfig, getSetupStatus } from "@/lib/account.functions";
 import { getMyLoanCenter, listPublicLoanProducts } from "@/lib/loans.functions";
 import { adminSaveLandingContent } from "@/lib/admin.functions";
 import { formatKes } from "@/lib/format";
@@ -49,6 +49,12 @@ const HeroImageEditor = lazy(() =>
 
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>) => search,
+  beforeLoad: async () => {
+    const status = await getSetupStatus();
+    if (status.needsSetup) {
+      throw redirect({ to: "/setup" });
+    }
+  },
   loader: async () => {
     try {
       // Fetch config AND public loan products together server-side, instead

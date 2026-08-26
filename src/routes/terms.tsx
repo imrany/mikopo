@@ -1,14 +1,20 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Scale } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getPublicBusinessConfig } from "@/lib/account.functions";
+import { getPublicBusinessConfig, getSetupStatus } from "@/lib/account.functions";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { DEFAULT_TERMS_MARKDOWN } from "@/lib/default-policies";
 import BackButton from "@/components/back-button";
 import { useAppConfig } from "@/lib/config-context";
 
 export const Route = createFileRoute("/terms")({
+  beforeLoad: async () => {
+    const status = await getSetupStatus();
+    if (status.needsSetup) {
+      throw redirect({ to: "/setup" });
+    }
+  },
   loader: async () => {
     try {
       const config = await getPublicBusinessConfig();

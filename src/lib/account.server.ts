@@ -77,27 +77,17 @@ export async function isAccountUsable(email: string) {
 }
 
 export async function adminExists(): Promise<boolean> {
-  try {
-    const count = await prisma.userRole.count({
-      where: { role: { in: ["super_admin", "staff"] } },
-    });
-    return count > 0;
-  } catch (err) {
-    console.warn("[adminExists check error]:", err);
-    return false;
-  }
+  const count = await prisma.userRole.count({
+    where: { role: { in: ["super_admin", "staff"] } },
+  });
+  return count > 0;
 }
 
 export async function setupCompleted(): Promise<boolean> {
-  try {
-    const settings = await prisma.businessSettings.findFirst({
-      select: { setupCompleted: true },
-    });
-    return Boolean(settings?.setupCompleted);
-  } catch (err) {
-    console.warn("[setupCompleted check error]:", err);
-    return false;
-  }
+  const settings = await prisma.businessSettings.findFirst({
+    select: { setupCompleted: true },
+  });
+  return Boolean(settings?.setupCompleted);
 }
 
 function generateReferralCode(): string {
