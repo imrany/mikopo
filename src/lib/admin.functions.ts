@@ -2032,7 +2032,7 @@ export const saveAdminRules = createServerFn({ method: "POST" })
     return { ok: true as const, message: "App rules and operational policies saved successfully." };
   });
 
-export async function wipeEntireDatabase() {
+async function wipeEntireDatabase() {
   return await prisma.$transaction(async (tx) => {
     await tx.supportResponse.deleteMany({});
     await tx.supportTicket.deleteMany({});
