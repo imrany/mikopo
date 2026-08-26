@@ -28,25 +28,57 @@ export const loginSchema = z.object({
 export type LoginInput = z.infer<typeof loginSchema>;
 
 export const setupSchema = z.object({
-  firstName: z.string().trim().min(2).max(60),
-  lastName: z.string().trim().min(2).max(60),
-  email: z.string().trim().email().max(255),
+  firstName: z.string().trim().min(2, "First name must be at least 2 characters").max(60),
+  lastName: z.string().trim().min(2, "Last name must be at least 2 characters").max(60),
+  email: z.string().trim().email("Enter a valid email address").max(255),
   phone: phoneSchema,
   password: z.string().min(8, "Password must be at least 8 characters").max(72),
   businessName: z.string().trim().min(2, "Business name is required").max(120),
   businessLocation: z.string().trim().min(2, "Business location is required").max(160),
-  supportEmail: z.string().trim().email().max(255).optional().or(z.literal("")),
-  supportPhone: z.string().trim().max(20).optional().or(z.literal("")),
-  mpesaShortcode: z.string().trim().max(12).optional().or(z.literal("")),
-  mpesaAccountNumber: z.string().trim().max(40).optional().or(z.literal("")),
-  mpesaEnvironment: z.enum(["sandbox", "production"]).optional().default("sandbox"),
-  mpesaCallbackUrl: z
+  supportEmail: z
     .string()
     .trim()
-    .url("Enter a valid URL")
-    .max(300)
+    .email("Enter a valid email")
+    .max(255)
     .optional()
     .or(z.literal("")),
+  supportPhone: z.string().trim().max(20).optional().or(z.literal("")),
+
+  // Daraja M-Pesa (Optional)
+  mpesaEnvironment: z.enum(["sandbox", "production"]).optional().default("sandbox"),
+  darajaConsumerKey: z.string().trim().optional().or(z.literal("")),
+  darajaConsumerSecret: z.string().trim().optional().or(z.literal("")),
+  darajaPasskey: z.string().trim().optional().or(z.literal("")),
+  darajaInitiatorName: z.string().trim().optional().or(z.literal("")),
+  darajaSecurityCredential: z.string().trim().optional().or(z.literal("")),
+  mpesaShortcode: z.string().trim().max(12).optional().or(z.literal("")),
+  mpesaAccountNumber: z.string().trim().max(40).optional().or(z.literal("")),
+  mpesaCallbackUrl: z.string().trim().max(300).optional().or(z.literal("")),
+
+  // SMTP Settings (Optional)
+  smtpHost: z.string().trim().optional().or(z.literal("")),
+  smtpPort: z.coerce.number().int().min(1).max(65535).optional().default(587),
+  smtpUser: z.string().trim().optional().or(z.literal("")),
+  smtpPass: z.string().trim().optional().or(z.literal("")),
+  smtpFromEmail: z
+    .string()
+    .trim()
+    .email("Enter a valid email")
+    .max(255)
+    .optional()
+    .or(z.literal("")),
+  smtpFromName: z.string().trim().max(120).optional().or(z.literal("")),
+  smtpSecure: z.boolean().optional().default(false),
+
+  // Operational Rules & Policies (Optional)
+  allowActivationWithoutDisbursement: z.boolean().optional().default(false),
+  enable2faByEmail: z.boolean().optional().default(false),
+  maxActiveLoansPerBorrower: z.coerce.number().int().min(1).max(10).optional().default(1),
+  requireGuarantorsForLoans: z.boolean().optional().default(true),
+  autoRejectIfDefaulted: z.boolean().optional().default(true),
+  lockDarajaConfig: z.boolean().optional().default(false),
+  lockSmtpConfig: z.boolean().optional().default(false),
+  lockLandingEditMode: z.boolean().optional().default(false),
 });
 
 export type SetupInput = z.infer<typeof setupSchema>;

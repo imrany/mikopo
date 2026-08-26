@@ -128,36 +128,78 @@ export async function createFirstAdmin(input: SetupInput) {
       update: {},
     });
 
+    const settingsData = {
+      businessName: input.businessName,
+      businessLocation: input.businessLocation,
+      supportEmail: input.supportEmail || null,
+      supportPhone: input.supportPhone || null,
+      mpesaShortcode: input.mpesaShortcode || null,
+      mpesaAccountNumber: input.mpesaAccountNumber || null,
+      mpesaEnvironment: input.mpesaEnvironment || "sandbox",
+      mpesaCallbackUrl: input.mpesaCallbackUrl || null,
+      // SMTP Settings
+      smtpHost: input.smtpHost || null,
+      smtpPort: input.smtpPort ? Number(input.smtpPort) : 587,
+      smtpUser: input.smtpUser || null,
+      ...(input.smtpPass ? { smtpPass: input.smtpPass } : {}),
+      smtpFromEmail: input.smtpFromEmail || null,
+      smtpFromName: input.smtpFromName || input.businessName,
+      smtpSecure: Boolean(input.smtpSecure),
+      // Operational Rules
+      allowActivationWithoutDisbursement: Boolean(input.allowActivationWithoutDisbursement),
+      enable2faByEmail: Boolean(input.enable2faByEmail),
+      maxActiveLoansPerBorrower: input.maxActiveLoansPerBorrower ?? 1,
+      requireGuarantorsForLoans: input.requireGuarantorsForLoans ?? true,
+      autoRejectIfDefaulted: input.autoRejectIfDefaulted ?? true,
+      lockDarajaConfig: Boolean(input.lockDarajaConfig),
+      lockSmtpConfig: Boolean(input.lockSmtpConfig),
+      lockLandingEditMode: Boolean(input.lockLandingEditMode),
+      setupCompleted: true,
+    };
+
     const existingSettings = await tx.businessSettings.findFirst();
     if (existingSettings) {
       await tx.businessSettings.update({
         where: { id: existingSettings.id },
-        data: {
-          businessName: input.businessName,
-          businessLocation: input.businessLocation,
-          supportEmail: input.supportEmail || null,
-          supportPhone: input.supportPhone || null,
-          mpesaShortcode: input.mpesaShortcode || null,
-          mpesaAccountNumber: input.mpesaAccountNumber || null,
-          mpesaEnvironment: input.mpesaEnvironment || "sandbox",
-          mpesaCallbackUrl: input.mpesaCallbackUrl || null,
-          setupCompleted: true,
-        },
+        data: settingsData,
       });
     } else {
       await tx.businessSettings.create({
-        data: {
-          businessName: input.businessName,
-          businessLocation: input.businessLocation,
-          supportEmail: input.supportEmail || null,
-          supportPhone: input.supportPhone || null,
-          mpesaShortcode: input.mpesaShortcode || null,
-          mpesaAccountNumber: input.mpesaAccountNumber || null,
-          mpesaEnvironment: input.mpesaEnvironment || "sandbox",
-          mpesaCallbackUrl: input.mpesaCallbackUrl || null,
-          setupCompleted: true,
-        },
+        data: settingsData,
       });
+    }
+
+    // Save Daraja Credentials if provided
+    const hasDarajaCredentials = Boolean(
+      input.darajaConsumerKey ||
+      input.darajaConsumerSecret ||
+      input.darajaPasskey ||
+      input.darajaInitiatorName ||
+      input.darajaSecurityCredential,
+    );
+
+    if (hasDarajaCredentials) {
+      const existingDaraja = await tx.darajaCredentials.findFirst();
+      const darajaPayload = {
+        environment: input.mpesaEnvironment || "sandbox",
+        consumerKey: input.darajaConsumerKey || "",
+        consumerSecret: input.darajaConsumerSecret || "",
+        passkey: input.darajaPasskey || "",
+        initiatorName: input.darajaInitiatorName || "",
+        securityCredential: input.darajaSecurityCredential || "",
+        updatedBy: profile.id,
+      };
+
+      if (existingDaraja) {
+        await tx.darajaCredentials.update({
+          where: { id: existingDaraja.id },
+          data: darajaPayload,
+        });
+      } else {
+        await tx.darajaCredentials.create({
+          data: darajaPayload,
+        });
+      }
     }
 
     await tx.auditLog.create({
