@@ -190,6 +190,9 @@ function createPrismaProxy(targetClient: any): any {
                 return args[0](createPrismaProxy(tx));
               }, args[1]);
             }
+            if (Array.isArray(args[0])) {
+              return Promise.all(args[0]);
+            }
             return target.$transaction(...args);
           }, "$transaction");
         };

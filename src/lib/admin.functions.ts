@@ -2033,30 +2033,64 @@ export const saveAdminRules = createServerFn({ method: "POST" })
   });
 
 async function wipeEntireDatabase() {
-  return await prisma.$transaction([
-    prisma.supportResponse.deleteMany({}),
-    prisma.supportTicket.deleteMany({}),
-    prisma.phoneChangeRequest.deleteMany({}),
-    prisma.loanRepayment.deleteMany({}),
-    prisma.mpesaTransaction.deleteMany({}),
-    prisma.loanGuarantor.deleteMany({}),
-    prisma.loanStatusEvent.deleteMany({}),
-    prisma.referralReward.deleteMany({}),
-    prisma.loan.deleteMany({}),
-    prisma.userGuarantor.deleteMany({}),
-    prisma.notification.deleteMany({}),
-    prisma.pushSubscription.deleteMany({}),
-    prisma.userSession.deleteMany({}),
-    prisma.testimonial.deleteMany({}),
-    prisma.newsletterSubscriber.deleteMany({}),
-    prisma.auditLog.deleteMany({}),
-    prisma.heroImagePreset.deleteMany({}),
-    prisma.darajaCredentials.deleteMany({}),
-    prisma.loanProduct.deleteMany({}),
-    prisma.userRole.deleteMany({}),
-    prisma.profile.deleteMany({}),
-    prisma.businessSettings.deleteMany({}),
-  ]);
+  try {
+    const tableNames = [
+      "support_responses",
+      "support_tickets",
+      "phone_change_requests",
+      "loan_repayments",
+      "mpesa_transactions",
+      "loan_guarantors",
+      "loan_status_events",
+      "referral_rewards",
+      "loans",
+      "user_guarantors",
+      "notifications",
+      "push_subscriptions",
+      "user_sessions",
+      "testimonials",
+      "newsletter_subscribers",
+      "audit_logs",
+      "hero_image_presets",
+      "daraja_credentials",
+      "loan_products",
+      "user_roles",
+      "profiles",
+      "business_settings",
+    ];
+    const truncateQuery = `TRUNCATE TABLE ${tableNames.map((t) => `"${t}"`).join(", ")} RESTART IDENTITY CASCADE;`;
+    await prisma.$executeRawUnsafe(truncateQuery);
+    return;
+  } catch (rawError) {
+    console.warn(
+      "[wipeEntireDatabase] TRUNCATE CASCADE failed, falling back to ordered delete:",
+      rawError,
+    );
+  }
+
+  // Fallback: Delete in strict reverse-foreign-key dependency order
+  await prisma.supportResponse.deleteMany({});
+  await prisma.supportTicket.deleteMany({});
+  await prisma.phoneChangeRequest.deleteMany({});
+  await prisma.loanRepayment.deleteMany({});
+  await prisma.mpesaTransaction.deleteMany({});
+  await prisma.loanGuarantor.deleteMany({});
+  await prisma.loanStatusEvent.deleteMany({});
+  await prisma.referralReward.deleteMany({});
+  await prisma.testimonial.deleteMany({});
+  await prisma.notification.deleteMany({});
+  await prisma.pushSubscription.deleteMany({});
+  await prisma.userSession.deleteMany({});
+  await prisma.userGuarantor.deleteMany({});
+  await prisma.loan.deleteMany({});
+  await prisma.loanProduct.deleteMany({});
+  await prisma.userRole.deleteMany({});
+  await prisma.profile.deleteMany({});
+  await prisma.newsletterSubscriber.deleteMany({});
+  await prisma.auditLog.deleteMany({});
+  await prisma.heroImagePreset.deleteMany({});
+  await prisma.darajaCredentials.deleteMany({});
+  await prisma.businessSettings.deleteMany({});
 }
 
 export const deleteBusinessFn = createServerFn({ method: "POST" })

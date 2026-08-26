@@ -1149,24 +1149,24 @@ export async function decidePhoneChangeRequest(
       };
     }
 
-    await prisma.$transaction([
-      prisma.profile.update({
+    await prisma.$transaction(async (tx: any) => {
+      await tx.profile.update({
         where: { id: request.userId },
         data: { phone: request.requestedPhone, phoneVerified: true },
-      }),
-      prisma.phoneChangeRequest.update({
+      });
+      await tx.phoneChangeRequest.update({
         where: { id: requestId },
         data: { status: "approved" },
-      }),
-      prisma.notification.create({
+      });
+      await tx.notification.create({
         data: {
           userId: request.userId,
           title: "Phone Number Updated",
           message: `Your request to change your phone number to ${request.requestedPhone} has been approved.`,
           type: "success",
         },
-      }),
-      prisma.auditLog.create({
+      });
+      await tx.auditLog.create({
         data: {
           actorId: adminId,
           action: "phone_change.approved",
@@ -1178,28 +1178,28 @@ export async function decidePhoneChangeRequest(
             newPhone: request.requestedPhone,
           },
         },
-      }),
-    ]);
+      });
+    });
 
     return { ok: true as const };
   } else {
-    await prisma.$transaction([
-      prisma.phoneChangeRequest.update({
+    await prisma.$transaction(async (tx: any) => {
+      await tx.phoneChangeRequest.update({
         where: { id: requestId },
         data: {
           status: "rejected",
           rejectionReason: rejectionReason || "Request declined by administration",
         },
-      }),
-      prisma.notification.create({
+      });
+      await tx.notification.create({
         data: {
           userId: request.userId,
           title: "Phone Change Request Declined",
           message: `Your request to change phone number to ${request.requestedPhone} was declined. Reason: ${rejectionReason || "Declined by administration"}`,
           type: "error",
         },
-      }),
-      prisma.auditLog.create({
+      });
+      await tx.auditLog.create({
         data: {
           actorId: adminId,
           action: "phone_change.rejected",
@@ -1211,8 +1211,8 @@ export async function decidePhoneChangeRequest(
             reason: rejectionReason,
           },
         },
-      }),
-    ]);
+      });
+    });
 
     return { ok: true as const };
   }
