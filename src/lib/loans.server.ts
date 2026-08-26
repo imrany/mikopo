@@ -376,10 +376,10 @@ export async function recalcLoanAfterRepayment(loanId: string) {
 export async function reconcileOverdueLoans() {
   try {
     const now = new Date();
-    // 1. Transition active/disbursed loans that have passed due date to defaulted
+    // 1. Transition active loans that have passed due date to defaulted
     const newlyOverdueLoans = await prisma.loan.findMany({
       where: {
-        status: { in: ["active", "disbursed"] },
+        status: "active",
         dueDate: {
           lt: now,
         },

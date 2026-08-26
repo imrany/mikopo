@@ -416,10 +416,15 @@ function isNetworkOrConnectionError(err: any): boolean {
     msg.includes("P1001") ||
     msg.includes("P1002") ||
     msg.includes("ECONNREFUSED") ||
+    msg.includes("ETIMEDOUT") ||
+    msg.includes("Connection terminated") ||
+    msg.includes("connection timeout") ||
     msg.includes("Can't reach database server") ||
     code === "P1001" ||
     code === "P1002" ||
-    code === "EAI_AGAIN"
+    code === "EAI_AGAIN" ||
+    code === "ETIMEDOUT" ||
+    code === "57P01"
   );
 }
 

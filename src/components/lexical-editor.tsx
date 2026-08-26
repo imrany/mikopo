@@ -159,38 +159,68 @@ function ValueSyncPlugin({
   value,
   mode,
   isSourceMode,
+  lastEmittedValueRef,
 }: {
   value: string;
   mode: "markdown" | "html" | "text";
   isSourceMode: boolean;
+  lastEmittedValueRef: React.MutableRefObject<string | null>;
 }) {
   const [editor] = useLexicalComposerContext();
+  const isInitializedRef = useRef(false);
 
   useEffect(() => {
     if (isSourceMode) return;
 
-    editor.update(() => {
-      const root = $getRoot();
-      root.clear();
+    // 1. If incoming value is identical to what the editor itself just emitted, ignore!
+    if (isInitializedRef.current && value === lastEmittedValueRef.current) {
+      return;
+    }
 
-      if (!value) return;
-
+    // 2. Check current editor contents before clearing/rebuilding
+    editor.getEditorState().read(() => {
+      let currentVal = "";
       if (mode === "html") {
-        const parser = new DOMParser();
-        const dom = parser.parseFromString(value, "text/html");
-        const nodes = $generateNodesFromDOM(editor, dom);
-        root.append(...nodes);
+        currentVal = $generateHtmlFromNodes(editor);
       } else if (mode === "markdown") {
-        $convertFromMarkdownString(value, TRANSFORMERS);
+        currentVal = $convertToMarkdownString(TRANSFORMERS);
       } else {
-        const p = $createParagraphNode();
-        p.append(
-          ...$generateNodesFromDOM(editor, new DOMParser().parseFromString(value, "text/html")),
-        );
-        root.append(p);
+        const root = $getRoot();
+        currentVal = root.getTextContent();
       }
+
+      // If existing content matches incoming value, avoid resetting selection
+      if (isInitializedRef.current && currentVal === value) {
+        lastEmittedValueRef.current = value;
+        return;
+      }
+
+      // Only perform rebuild when value came from external source or during initial load
+      editor.update(() => {
+        const root = $getRoot();
+        root.clear();
+        isInitializedRef.current = true;
+        lastEmittedValueRef.current = value;
+
+        if (!value) return;
+
+        if (mode === "html") {
+          const parser = new DOMParser();
+          const dom = parser.parseFromString(value, "text/html");
+          const nodes = $generateNodesFromDOM(editor, dom);
+          root.append(...nodes);
+        } else if (mode === "markdown") {
+          $convertFromMarkdownString(value, TRANSFORMERS);
+        } else {
+          const p = $createParagraphNode();
+          p.append(
+            ...$generateNodesFromDOM(editor, new DOMParser().parseFromString(value, "text/html")),
+          );
+          root.append(p);
+        }
+      });
     });
-  }, [editor, mode, isSourceMode, value]);
+  }, [editor, mode, isSourceMode, value, lastEmittedValueRef]);
 
   return null;
 }
@@ -692,6 +722,7 @@ export function LexicalRichEditor({
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [rawText, setRawText] = useState(value);
   const editorRef = useRef<LexicalEditor | null>(null);
+  const lastEmittedValueRef = useRef<string | null>(value);
 
   useEffect(() => {
     setRawText(value);
@@ -728,6 +759,7 @@ export function LexicalRichEditor({
         output = root.getTextContent();
       }
 
+      lastEmittedValueRef.current = output;
       setRawText(output);
       onChange(output);
     });
@@ -736,6 +768,7 @@ export function LexicalRichEditor({
   const handleInsertText = (textToInsert: string) => {
     if (isSourceMode) {
       const next = rawText + textToInsert;
+      lastEmittedValueRef.current = next;
       setRawText(next);
       onChange(next);
       return;
@@ -758,6 +791,7 @@ export function LexicalRichEditor({
 
   const handleRawChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
+    lastEmittedValueRef.current = val;
     setRawText(val);
     onChange(val);
 
@@ -792,7 +826,12 @@ export function LexicalRichEditor({
       )}
     >
       <LexicalComposer initialConfig={initialConfig}>
-        <ValueSyncPlugin value={value} mode={mode} isSourceMode={isSourceMode} />
+        <ValueSyncPlugin
+          value={value}
+          mode={mode}
+          isSourceMode={isSourceMode}
+          lastEmittedValueRef={lastEmittedValueRef}
+        />
 
         <EditorToolbar
           mode={mode}

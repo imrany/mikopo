@@ -14,7 +14,7 @@ export default defineConfig(async () => {
       allowedHosts: true,
     },
     plugins: [
-      tanstackStart(), 
+      tanstackStart(),
       react(), // Explicitly injected to restore the missing /@react-refresh runtime
       tailwindcss(),
     ],
