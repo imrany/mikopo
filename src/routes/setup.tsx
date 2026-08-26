@@ -13,7 +13,6 @@ import {
   ShieldCheck,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
   Eye,
   EyeOff,
   Globe,
@@ -306,18 +305,6 @@ function SetupPage() {
       setPending(false);
     }
   }
-
-  const handleFillDarajaSandbox = () => {
-    setValues((prev) => ({
-      ...prev,
-      mpesaEnvironment: "sandbox",
-      darajaInitiatorName: prev.darajaInitiatorName || "testapi",
-      mpesaShortcode: prev.mpesaShortcode || "174379",
-      mpesaAccountNumber: prev.mpesaAccountNumber || "174379",
-      mpesaCallbackUrl: prev.mpesaCallbackUrl || currentOrigin || "",
-    }));
-    toast.success("Sandbox defaults populated (Shortcode 174379, testapi)");
-  };
 
   const handleUseCurrentOriginUrl = () => {
     if (currentOrigin) {
@@ -617,25 +604,11 @@ function SetupPage() {
             {/* STEP 2: DARAJA M-PESA CREDENTIALS (OPTIONAL) */}
             {step === 2 && (
               <div className="space-y-5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-border/80 bg-muted/30 p-3.5">
-                  <div>
-                    <p className="text-xs font-semibold text-foreground">
-                      Safaricom Daraja Gateway
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Used for automated STK push borrower repayments and B2C instant disbursements.
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleFillDarajaSandbox}
-                    className="shrink-0 gap-1.5 text-xs h-8"
-                  >
-                    <Sparkles className="size-3 text-amber-500" />
-                    Fill Sandbox Defaults
-                  </Button>
+                <div className="rounded-lg border border-border/80 bg-muted/30 p-3.5">
+                  <p className="text-xs font-semibold text-foreground">Safaricom Daraja Gateway</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Used for automated STK push borrower repayments and B2C instant disbursements.
+                  </p>
                 </div>
 
                 {/* Environment Mode Switch */}
