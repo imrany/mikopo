@@ -144,7 +144,7 @@ export const testAdminSmtpConnection = createServerFn({ method: "POST" })
     return { ok: true as const, message: `Test email sent to ${data.recipientEmail}` };
   });
 
-// 4. Send Broadcast Email to Specific User, All Users, or Newsletter Subscribers
+// 4. Send Multi-Channel Broadcast (Email, In-App Notification, Web Push) to Specific User, All Users, or Newsletter Subscribers
 const broadcastSchema = z.object({
   target: z.enum([
     "all_users",
@@ -154,8 +154,10 @@ const broadcastSchema = z.object({
   ]),
   specificUserId: z.string().uuid().optional(),
   subject: z.string().trim().min(3, "Subject is required"),
-  message: z.string().trim().min(10, "Message content is required"),
+  message: z.string().trim().min(5, "Message content is required"),
+  sendEmail: z.boolean().default(true),
   sendInAppNotification: z.boolean().default(true),
+  sendWebPush: z.boolean().default(true),
 });
 
 export const sendAdminBroadcastEmail = createServerFn({ method: "POST" })
@@ -165,6 +167,12 @@ export const sendAdminBroadcastEmail = createServerFn({ method: "POST" })
     const { roles, userId } = context;
     if (!roles.includes("super_admin") && !roles.includes("staff")) {
       throw new Error("Forbidden");
+    }
+
+    if (!data.sendEmail && !data.sendInAppNotification && !data.sendWebPush) {
+      throw new Error(
+        "Please select at least one delivery channel (Email, In-App Notification, or Web Push).",
+      );
     }
 
     let recipients: string[] = [];
@@ -202,73 +210,157 @@ export const sendAdminBroadcastEmail = createServerFn({ method: "POST" })
       userIdsToNotifyInApp = activeUsers.map((u) => u.id);
     }
 
-    if (recipients.length === 0) {
-      throw new Error("No recipients found for the selected target group.");
+    // Clean plain text snippet for notifications / webpush
+    const plainTextContent = data.message
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const snippet = plainTextContent.slice(0, 240) + (plainTextContent.length > 240 ? "..." : "");
+
+    let emailSentCount = 0;
+    let emailStatus = "not_selected";
+    let inAppCount = 0;
+    let webPushCount = 0;
+
+    // 1. EMAIL CHANNEL DISPATCH
+    if (data.sendEmail) {
+      if (recipients.length === 0) {
+        if (!data.sendInAppNotification && !data.sendWebPush) {
+          throw new Error("No email recipients found for the selected target group.");
+        }
+      } else {
+        const { getSmtpConfig, sendBroadcastEmail } = await import("./email.server");
+        const smtpConfig = await getSmtpConfig();
+
+        if (!smtpConfig) {
+          if (!data.sendInAppNotification && !data.sendWebPush) {
+            throw new Error(
+              "SMTP is not configured. Email broadcast features require a valid SMTP configuration in Settings.",
+            );
+          }
+          emailStatus = "smtp_not_configured";
+          console.warn("[Broadcast] SMTP not configured. Skipping email delivery.");
+        } else {
+          // Format HTML email body
+          const formattedHtml = `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #1e293b;">
+              ${data.message.includes("<p>") || data.message.includes("<div>") ? data.message : data.message.replace(/\n/g, "<br/>")}
+            </div>
+          `;
+
+          const emailResult = await sendBroadcastEmail({
+            recipients,
+            subject: data.subject,
+            bodyContent: formattedHtml,
+          });
+
+          if (emailResult.sent) {
+            emailSentCount = recipients.length;
+            emailStatus = "sent";
+          } else {
+            emailStatus = "failed";
+          }
+        }
+      }
     }
 
-    const { getSmtpConfig, sendBroadcastEmail } = await import("./email.server");
-    const smtpConfig = await getSmtpConfig();
-    if (!smtpConfig) {
-      throw new Error(
-        "SMTP is not configured. Email broadcast features are disabled until valid SMTP configuration is saved in Business Settings.",
-      );
-    }
-
-    const { createInAppNotification } = await import("./notifications.server");
-
-    // Format HTML email
-    const formattedHtml = `
-      <div style="font-size: 15px; line-height: 1.6;">
-        ${data.message.replace(/\n/g, "<br/>")}
-      </div>
-    `;
-
-    // Send emails in background
-    const emailResult = await sendBroadcastEmail({
-      recipients,
-      subject: data.subject,
-      bodyContent: formattedHtml,
-    });
-
-    // In-app notifications
+    // 2. IN-APP NOTIFICATION CHANNEL DISPATCH
     if (data.sendInAppNotification) {
+      const { createInAppNotification } = await import("./notifications.server");
       if (data.target === "all_users" || data.target === "all_including_subscribers") {
         await createInAppNotification({
           roleTarget: "all",
           title: data.subject,
-          message: data.message.slice(0, 200) + (data.message.length > 200 ? "..." : ""),
+          message: snippet,
           type: "announcement",
+          link: "/notifications",
         });
-      } else {
+        inAppCount = userIdsToNotifyInApp.length || 1;
+      } else if (data.target === "specific_user") {
         for (const targetUid of userIdsToNotifyInApp) {
           await createInAppNotification({
             userId: targetUid,
             title: data.subject,
-            message: data.message.slice(0, 200) + (data.message.length > 200 ? "..." : ""),
+            message: snippet,
             type: "announcement",
+            link: "/notifications",
           });
         }
+        inAppCount = userIdsToNotifyInApp.length;
+      }
+    }
+
+    // 3. WEB PUSH NOTIFICATION CHANNEL DISPATCH
+    if (data.sendWebPush) {
+      const { sendWebPushNotification } = await import("./webpush.server");
+      if (data.target === "all_users" || data.target === "all_including_subscribers") {
+        await sendWebPushNotification({
+          roleTarget: "all",
+          title: data.subject,
+          message: snippet,
+          url: "/notifications",
+        });
+        webPushCount = userIdsToNotifyInApp.length || 1;
+      } else if (data.target === "specific_user") {
+        for (const targetUid of userIdsToNotifyInApp) {
+          await sendWebPushNotification({
+            userId: targetUid,
+            title: data.subject,
+            message: snippet,
+            url: "/notifications",
+          });
+        }
+        webPushCount = userIdsToNotifyInApp.length;
       }
     }
 
     await prisma.auditLog.create({
       data: {
         actorId: userId,
-        action: "email.broadcast_sent",
+        action: "broadcast.dispatched",
         targetType: "broadcast",
         details: {
           target: data.target,
+          channels: {
+            email: data.sendEmail,
+            inApp: data.sendInAppNotification,
+            webPush: data.sendWebPush,
+          },
+          emailStatus,
           recipientsCount: recipients.length,
+          inAppCount,
+          webPushCount,
           subject: data.subject,
         },
       },
     });
 
+    const channelSummaryParts: string[] = [];
+    if (data.sendEmail) {
+      if (emailStatus === "sent") {
+        channelSummaryParts.push(`Email (${emailSentCount} recipients)`);
+      } else if (emailStatus === "smtp_not_configured") {
+        channelSummaryParts.push(`Email (Skipped - SMTP not configured)`);
+      } else {
+        channelSummaryParts.push(`Email (Failed)`);
+      }
+    }
+    if (data.sendInAppNotification) {
+      channelSummaryParts.push(
+        `In-App Notification (${inAppCount > 0 ? inAppCount : "Delivered"})`,
+      );
+    }
+    if (data.sendWebPush) {
+      channelSummaryParts.push(`Web Push (Dispatched)`);
+    }
+
     return {
       ok: true as const,
-      recipientsCount: recipients.length,
-      emailSent: emailResult.sent,
-      message: `Broadcast message sent to ${recipients.length} recipient(s).`,
+      emailSentCount,
+      inAppCount,
+      webPushCount,
+      channelsDispatched: channelSummaryParts,
+      message: `Broadcast successfully dispatched via ${channelSummaryParts.join(", ")}.`,
     };
   });
 

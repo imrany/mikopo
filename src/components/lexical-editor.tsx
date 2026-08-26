@@ -234,6 +234,7 @@ function EditorToolbar({
   showIconPicker,
   allowSourceToggle,
   onInsertText,
+  onFormatSource,
 }: {
   mode: "markdown" | "html" | "text";
   isSourceMode: boolean;
@@ -243,6 +244,7 @@ function EditorToolbar({
   showIconPicker: boolean;
   allowSourceToggle: boolean;
   onInsertText: (text: string) => void;
+  onFormatSource?: (formatType: string) => void;
 }) {
   const [editor] = useLexicalComposerContext();
   const [isBold, setIsBold] = useState(false);
@@ -308,21 +310,38 @@ function EditorToolbar({
   }, [editor, updateToolbar]);
 
   const formatHeading = (tag: HeadingTagType) => {
+    if (isSourceMode) {
+      onFormatSource?.(tag);
+      return;
+    }
+
     editor.update(() => {
       const selection = $getSelection();
-      if ($isRangeSelection(selection)) {
-        if (blockType === tag) {
-          $setBlocksType(selection, () => $createParagraphNode());
-          setBlockType("paragraph");
-        } else {
-          $setBlocksType(selection, () => $createHeadingNode(tag));
-          setBlockType(tag);
-        }
+      if (!$isRangeSelection(selection)) {
+        return;
+      }
+
+      const anchorNode = selection.anchor.getNode();
+      const topLevelElement =
+        anchorNode.getKey() === "root" ? anchorNode : anchorNode.getTopLevelElementOrThrow();
+
+      const isCurrentHeading = $isHeadingNode(topLevelElement) && topLevelElement.getTag() === tag;
+
+      if (isCurrentHeading || blockType === tag) {
+        $setBlocksType(selection, () => $createParagraphNode());
+        setBlockType("paragraph");
+      } else {
+        $setBlocksType(selection, () => $createHeadingNode(tag));
+        setBlockType(tag);
       }
     });
   };
 
   const formatQuote = () => {
+    if (isSourceMode) {
+      onFormatSource?.("quote");
+      return;
+    }
     editor.update(() => {
       const selection = $getSelection();
       if ($isRangeSelection(selection)) {
@@ -338,6 +357,10 @@ function EditorToolbar({
   };
 
   const formatBulletList = () => {
+    if (isSourceMode) {
+      onFormatSource?.("bullet");
+      return;
+    }
     if (blockType === "bullet") {
       editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
       setBlockType("paragraph");
@@ -348,6 +371,10 @@ function EditorToolbar({
   };
 
   const formatNumberedList = () => {
+    if (isSourceMode) {
+      onFormatSource?.("number");
+      return;
+    }
     if (blockType === "number") {
       editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
       setBlockType("paragraph");
@@ -355,6 +382,14 @@ function EditorToolbar({
       editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
       setBlockType("number");
     }
+  };
+
+  const formatInline = (formatType: "bold" | "italic" | "underline" | "strikethrough" | "code") => {
+    if (isSourceMode) {
+      onFormatSource?.(formatType);
+      return;
+    }
+    editor.dispatchCommand(FORMAT_TEXT_COMMAND, formatType);
   };
 
   const applyLink = () => {
@@ -386,6 +421,7 @@ function EditorToolbar({
           type="button"
           variant="ghost"
           size="sm"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor.dispatchCommand(UNDO_COMMAND, undefined)}
           disabled={isSourceMode}
           className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
@@ -397,6 +433,7 @@ function EditorToolbar({
           type="button"
           variant="ghost"
           size="sm"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor.dispatchCommand(REDO_COMMAND, undefined)}
           disabled={isSourceMode}
           className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
@@ -411,10 +448,10 @@ function EditorToolbar({
           type="button"
           variant={blockType === "h1" ? "secondary" : "ghost"}
           size="sm"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => formatHeading("h1")}
-          disabled={isSourceMode}
           className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-          title="Heading 1"
+          title="Heading 1 (H1)"
         >
           <Heading1 className="size-3.5" />
         </Button>
@@ -422,10 +459,10 @@ function EditorToolbar({
           type="button"
           variant={blockType === "h2" ? "secondary" : "ghost"}
           size="sm"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => formatHeading("h2")}
-          disabled={isSourceMode}
           className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-          title="Heading 2"
+          title="Heading 2 (H2)"
         >
           <Heading2 className="size-3.5" />
         </Button>
@@ -433,10 +470,10 @@ function EditorToolbar({
           type="button"
           variant={blockType === "h3" ? "secondary" : "ghost"}
           size="sm"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => formatHeading("h3")}
-          disabled={isSourceMode}
           className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-          title="Heading 3"
+          title="Heading 3 (H3)"
         >
           <Heading3 className="size-3.5" />
         </Button>
@@ -447,8 +484,8 @@ function EditorToolbar({
           type="button"
           variant={isBold ? "secondary" : "ghost"}
           size="sm"
-          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "bold")}
-          disabled={isSourceMode}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => formatInline("bold")}
           className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground font-bold"
           title="Bold (Ctrl+B)"
         >
@@ -458,8 +495,8 @@ function EditorToolbar({
           type="button"
           variant={isItalic ? "secondary" : "ghost"}
           size="sm"
-          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "italic")}
-          disabled={isSourceMode}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => formatInline("italic")}
           className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
           title="Italic (Ctrl+I)"
         >
@@ -469,8 +506,8 @@ function EditorToolbar({
           type="button"
           variant={isUnderline ? "secondary" : "ghost"}
           size="sm"
-          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "underline")}
-          disabled={isSourceMode}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => formatInline("underline")}
           className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
           title="Underline (Ctrl+U)"
         >
@@ -480,8 +517,8 @@ function EditorToolbar({
           type="button"
           variant={isStrikethrough ? "secondary" : "ghost"}
           size="sm"
-          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "strikethrough")}
-          disabled={isSourceMode}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => formatInline("strikethrough")}
           className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
           title="Strikethrough"
         >
@@ -491,8 +528,8 @@ function EditorToolbar({
           type="button"
           variant={isCode ? "secondary" : "ghost"}
           size="sm"
-          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "code")}
-          disabled={isSourceMode}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => formatInline("code")}
           className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
           title="Inline Code"
         >
@@ -505,8 +542,8 @@ function EditorToolbar({
           type="button"
           variant={blockType === "bullet" ? "secondary" : "ghost"}
           size="sm"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={formatBulletList}
-          disabled={isSourceMode}
           className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
           title="Bulleted List"
         >
@@ -516,8 +553,8 @@ function EditorToolbar({
           type="button"
           variant={blockType === "number" ? "secondary" : "ghost"}
           size="sm"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={formatNumberedList}
-          disabled={isSourceMode}
           className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
           title="Numbered List"
         >
@@ -527,8 +564,8 @@ function EditorToolbar({
           type="button"
           variant={blockType === "quote" ? "secondary" : "ghost"}
           size="sm"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={formatQuote}
-          disabled={isSourceMode}
           className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
           title="Quote Block"
         >
@@ -541,6 +578,7 @@ function EditorToolbar({
               type="button"
               variant={isLink ? "secondary" : "ghost"}
               size="sm"
+              onMouseDown={(e) => e.preventDefault()}
               disabled={isSourceMode}
               className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
               title="Insert / Edit Link"
@@ -575,6 +613,7 @@ function EditorToolbar({
           type="button"
           variant="ghost"
           size="sm"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() =>
             editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "left" as ElementFormatType)
           }
@@ -588,6 +627,7 @@ function EditorToolbar({
           type="button"
           variant="ghost"
           size="sm"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() =>
             editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "center" as ElementFormatType)
           }
@@ -601,6 +641,7 @@ function EditorToolbar({
           type="button"
           variant="ghost"
           size="sm"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() =>
             editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, "right" as ElementFormatType)
           }
@@ -620,6 +661,7 @@ function EditorToolbar({
                   type="button"
                   variant="ghost"
                   size="sm"
+                  onMouseDown={(e) => e.preventDefault()}
                   className="h-7 px-2 gap-1 text-xs text-primary hover:text-primary/90 font-medium"
                   title="Insert Icon Tag"
                 >
@@ -670,6 +712,7 @@ function EditorToolbar({
             type="button"
             variant={isSourceMode ? "secondary" : "ghost"}
             size="sm"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => setIsSourceMode((prev) => !prev)}
             className="h-7 px-2 gap-1 text-[11px] font-mono text-muted-foreground hover:text-foreground"
             title={
@@ -694,6 +737,7 @@ function EditorToolbar({
           type="button"
           variant="ghost"
           size="sm"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => setIsFullScreen((prev) => !prev)}
           className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
           title={isFullScreen ? "Exit Fullscreen" : "Fullscreen View"}
@@ -723,6 +767,7 @@ export function LexicalRichEditor({
   const [rawText, setRawText] = useState(value);
   const editorRef = useRef<LexicalEditor | null>(null);
   const lastEmittedValueRef = useRef<string | null>(value);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     setRawText(value);
@@ -763,6 +808,150 @@ export function LexicalRichEditor({
       setRawText(output);
       onChange(output);
     });
+  };
+
+  const handleFormatSource = (formatType: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const currentText = rawText || "";
+    const selectedText = currentText.substring(start, end);
+
+    let newText = currentText;
+    let newStart = start;
+    let newEnd = end;
+
+    if (mode === "markdown") {
+      if (formatType === "h1" || formatType === "h2" || formatType === "h3") {
+        const prefix = formatType === "h1" ? "# " : formatType === "h2" ? "## " : "### ";
+        const beforeCursor = currentText.substring(0, start);
+        const lastNewline = beforeCursor.lastIndexOf("\n");
+        const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
+        const lineEnd =
+          currentText.indexOf("\n", end) === -1
+            ? currentText.length
+            : currentText.indexOf("\n", end);
+        const currentLine = currentText.substring(lineStart, lineEnd);
+
+        if (currentLine.startsWith(prefix)) {
+          const updatedLine = currentLine.substring(prefix.length);
+          newText =
+            currentText.substring(0, lineStart) + updatedLine + currentText.substring(lineEnd);
+          newStart = Math.max(lineStart, start - prefix.length);
+          newEnd = Math.max(lineStart, end - prefix.length);
+        } else {
+          const cleanLine = currentLine.replace(/^#{1,6}\s*/, "");
+          const updatedLine = prefix + cleanLine;
+          newText =
+            currentText.substring(0, lineStart) + updatedLine + currentText.substring(lineEnd);
+          newStart = start + prefix.length;
+          newEnd = end + prefix.length;
+        }
+      } else if (formatType === "bold") {
+        const wrapped = `**${selectedText || "bold text"}**`;
+        newText = currentText.substring(0, start) + wrapped + currentText.substring(end);
+        newStart = start + 2;
+        newEnd = newStart + (selectedText ? selectedText.length : 9);
+      } else if (formatType === "italic") {
+        const wrapped = `*${selectedText || "italic text"}*`;
+        newText = currentText.substring(0, start) + wrapped + currentText.substring(end);
+        newStart = start + 1;
+        newEnd = newStart + (selectedText ? selectedText.length : 11);
+      } else if (formatType === "underline") {
+        const wrapped = `<u>${selectedText || "underlined text"}</u>`;
+        newText = currentText.substring(0, start) + wrapped + currentText.substring(end);
+        newStart = start + 3;
+        newEnd = newStart + (selectedText ? selectedText.length : 15);
+      } else if (formatType === "strikethrough") {
+        const wrapped = `~~${selectedText || "strikethrough text"}~~`;
+        newText = currentText.substring(0, start) + wrapped + currentText.substring(end);
+        newStart = start + 2;
+        newEnd = newStart + (selectedText ? selectedText.length : 18);
+      } else if (formatType === "code") {
+        const wrapped = `\`${selectedText || "code"}\``;
+        newText = currentText.substring(0, start) + wrapped + currentText.substring(end);
+        newStart = start + 1;
+        newEnd = newStart + (selectedText ? selectedText.length : 4);
+      } else if (formatType === "quote") {
+        const wrapped = `> ${selectedText || "quote"}`;
+        newText = currentText.substring(0, start) + wrapped + currentText.substring(end);
+      } else if (formatType === "bullet") {
+        const wrapped = `- ${selectedText || "list item"}`;
+        newText = currentText.substring(0, start) + wrapped + currentText.substring(end);
+      } else if (formatType === "number") {
+        const wrapped = `1. ${selectedText || "list item"}`;
+        newText = currentText.substring(0, start) + wrapped + currentText.substring(end);
+      }
+    } else if (mode === "html") {
+      if (formatType === "h1" || formatType === "h2" || formatType === "h3") {
+        const tag = formatType;
+        const wrapped = `<${tag}>${selectedText || "Heading"}</${tag}>`;
+        newText = currentText.substring(0, start) + wrapped + currentText.substring(end);
+        newStart = start + tag.length + 2;
+        newEnd = newStart + (selectedText ? selectedText.length : 7);
+      } else if (formatType === "bold") {
+        const wrapped = `<strong>${selectedText || "bold text"}</strong>`;
+        newText = currentText.substring(0, start) + wrapped + currentText.substring(end);
+        newStart = start + 8;
+        newEnd = newStart + (selectedText ? selectedText.length : 9);
+      } else if (formatType === "italic") {
+        const wrapped = `<em>${selectedText || "italic text"}</em>`;
+        newText = currentText.substring(0, start) + wrapped + currentText.substring(end);
+        newStart = start + 4;
+        newEnd = newStart + (selectedText ? selectedText.length : 11);
+      } else if (formatType === "underline") {
+        const wrapped = `<u>${selectedText || "underlined text"}</u>`;
+        newText = currentText.substring(0, start) + wrapped + currentText.substring(end);
+        newStart = start + 3;
+        newEnd = newStart + (selectedText ? selectedText.length : 15);
+      } else if (formatType === "strikethrough") {
+        const wrapped = `<s>${selectedText || "strikethrough text"}</s>`;
+        newText = currentText.substring(0, start) + wrapped + currentText.substring(end);
+        newStart = start + 3;
+        newEnd = newStart + (selectedText ? selectedText.length : 18);
+      } else if (formatType === "code") {
+        const wrapped = `<code>${selectedText || "code"}</code>`;
+        newText = currentText.substring(0, start) + wrapped + currentText.substring(end);
+        newStart = start + 6;
+        newEnd = newStart + (selectedText ? selectedText.length : 4);
+      } else if (formatType === "quote") {
+        const wrapped = `<blockquote>${selectedText || "quote"}</blockquote>`;
+        newText = currentText.substring(0, start) + wrapped + currentText.substring(end);
+      } else if (formatType === "bullet") {
+        const wrapped = `<ul>\n  <li>${selectedText || "list item"}</li>\n</ul>`;
+        newText = currentText.substring(0, start) + wrapped + currentText.substring(end);
+      } else if (formatType === "number") {
+        const wrapped = `<ol>\n  <li>${selectedText || "list item"}</li>\n</ol>`;
+        newText = currentText.substring(0, start) + wrapped + currentText.substring(end);
+      }
+    }
+
+    lastEmittedValueRef.current = newText;
+    setRawText(newText);
+    onChange(newText);
+
+    if (editorRef.current) {
+      editorRef.current.update(() => {
+        const root = $getRoot();
+        root.clear();
+        if (!newText) return;
+        if (mode === "markdown") {
+          $convertFromMarkdownString(newText, TRANSFORMERS);
+        } else if (mode === "html") {
+          const parser = new DOMParser();
+          const dom = parser.parseFromString(newText, "text/html");
+          const nodes = $generateNodesFromDOM(editorRef.current!, dom);
+          root.append(...nodes);
+        }
+      });
+    }
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(newStart, newEnd);
+    }, 0);
   };
 
   const handleInsertText = (textToInsert: string) => {
@@ -842,11 +1031,13 @@ export function LexicalRichEditor({
           showIconPicker={showIconPicker}
           allowSourceToggle={allowSourceToggle}
           onInsertText={handleInsertText}
+          onFormatSource={handleFormatSource}
         />
 
         <div className="relative flex-1">
           {isSourceMode ? (
             <textarea
+              ref={textareaRef}
               id={id}
               value={rawText}
               onChange={handleRawChange}
