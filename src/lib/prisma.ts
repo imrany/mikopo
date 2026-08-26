@@ -396,7 +396,18 @@ function handleMemMethod(model: string, method: string, args: any = {}) {
 let realPrismaClient: any = null;
 if (databaseUrl && globalThis.prismaRealAvailable !== false) {
   try {
-    const pool = new Pool({ connectionString: databaseUrl, connectionTimeoutMillis: 2000 });
+    const isRemoteHost =
+      databaseUrl.includes("sslmode=require") ||
+      databaseUrl.includes("render.com") ||
+      databaseUrl.includes("supabase.co") ||
+      databaseUrl.includes("neon.tech") ||
+      databaseUrl.includes("amazonaws.com");
+
+    const pool = new Pool({
+      connectionString: databaseUrl,
+      connectionTimeoutMillis: 5000,
+      ssl: isRemoteHost ? { rejectUnauthorized: false } : undefined,
+    });
     const adapter = new PrismaPg(pool);
     realPrismaClient = globalThis.prisma || new PrismaClient({ adapter });
   } catch (err) {
@@ -413,18 +424,37 @@ function isNetworkOrConnectionError(err: any): boolean {
   return (
     msg.includes("getaddrinfo EAI_AGAIN") ||
     msg.includes("EAI_AGAIN") ||
+    msg.includes("P1000") ||
     msg.includes("P1001") ||
     msg.includes("P1002") ||
+    msg.includes("P1003") ||
+    msg.includes("P1010") ||
+    msg.includes("P1017") ||
     msg.includes("ECONNREFUSED") ||
     msg.includes("ETIMEDOUT") ||
     msg.includes("Connection terminated") ||
     msg.includes("connection timeout") ||
     msg.includes("Can't reach database server") ||
+    msg.includes("User was denied access") ||
+    msg.includes("denied access") ||
+    msg.includes("Authentication failed") ||
+    msg.includes("password authentication failed") ||
+    msg.includes("permission denied") ||
+    msg.includes("no pg_hba.conf entry") ||
+    msg.includes("SSL") ||
+    msg.includes("self-signed certificate") ||
+    code === "P1000" ||
     code === "P1001" ||
     code === "P1002" ||
+    code === "P1003" ||
+    code === "P1010" ||
+    code === "P1017" ||
     code === "EAI_AGAIN" ||
     code === "ETIMEDOUT" ||
-    code === "57P01"
+    code === "57P01" ||
+    code === "28P01" ||
+    code === "28000" ||
+    code === "42501"
   );
 }
 
