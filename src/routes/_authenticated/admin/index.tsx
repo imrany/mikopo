@@ -23,6 +23,7 @@ import { SiteHeader } from "@/components/site-header";
 import { AdminNav } from "@/components/admin-nav";
 import { LoadingPage } from "@/components/loading-page";
 import { TableSkeleton, CardGridSkeleton } from "@/components/ui/skeleton-loaders";
+import { useRealtimeSync, broadcastSync } from "@/hooks/use-realtime";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -143,11 +144,27 @@ function AdminOverviewPage() {
     enabled: isStaff,
   });
 
+  const handleRefresh = () => {
+    void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+    void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
+  };
+
+  useRealtimeSync(
+    ["LOAN_STATUS_CHANGED", "PAYMENT_RECEIVED", "GUARANTOR_UPDATED", "USER_PROFILE_UPDATED"],
+    () => {
+      handleRefresh();
+    },
+    { intervalMs: 6000, enabled: isStaff },
+  );
+
   const decideMutation = useMutation({
     mutationFn: (input: { loanId: string; approve: boolean }) => decideFn({ data: input }),
     onSuccess: (_res, input) => {
       toast.success(input.approve ? "Loan approved" : "Loan rejected");
       void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
+      broadcastSync("LOAN_STATUS_CHANGED");
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -157,6 +174,9 @@ function AdminOverviewPage() {
     onSuccess: () => {
       toast.success("M-Pesa payout sent for processing");
       void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
+      broadcastSync("LOAN_STATUS_CHANGED");
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -164,11 +184,6 @@ function AdminOverviewPage() {
   if (loading || !isStaff) {
     return <LoadingPage />;
   }
-
-  const handleRefresh = () => {
-    void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
-    void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
-  };
 
   return (
     <div className="min-h-screen bg-muted/30">

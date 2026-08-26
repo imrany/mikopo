@@ -14,7 +14,8 @@ import {
   Wallet,
 } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
-import { LoadingPage } from "@/components/loading-page";
+import { DashboardSkeleton } from "@/components/ui/skeleton-loaders";
+import { useRealtimeSync } from "@/hooks/use-realtime";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -59,10 +60,19 @@ function CredibilityPage() {
   const getOverviewFn = useServerFn(getCredibilityData);
   const envFn = useServerFn(getDarajaEnvironment);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["credibility-overview"],
     queryFn: () => getOverviewFn(),
   });
+
+  useRealtimeSync(
+    ["CREDIBILITY_UPDATED", "PAYMENT_RECEIVED", "LOAN_STATUS_CHANGED", "REFERRAL_UPDATED"],
+    () => {
+      void refetch();
+    },
+    { intervalMs: 8000 },
+  );
+
   const envQuery = useQuery({
     queryKey: ["daraja-env"],
     queryFn: () => envFn(),
@@ -90,7 +100,14 @@ function CredibilityPage() {
   }
 
   if (isLoading) {
-    return <LoadingPage />;
+    return (
+      <div className="min-h-screen bg-muted/30">
+        <SiteHeader />
+        <main className="mx-auto max-w-6xl px-4 py-8 space-y-8">
+          <DashboardSkeleton />
+        </main>
+      </div>
+    );
   }
 
   if (error || !data) {

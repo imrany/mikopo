@@ -25,6 +25,8 @@ import {
 import { toast } from "sonner";
 import { SiteHeader } from "@/components/site-header";
 import { LoadingPage } from "@/components/loading-page";
+import { DetailSkeleton } from "@/components/ui/skeleton-loaders";
+import { useRealtimeSync, broadcastSync } from "@/hooks/use-realtime";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -105,11 +107,22 @@ function AdminLoanDetailPage() {
     enabled: isStaff && Boolean(loanId),
   });
 
+  useRealtimeSync(
+    ["LOAN_STATUS_CHANGED", "PAYMENT_RECEIVED", "GUARANTOR_UPDATED"],
+    () => {
+      void queryClient.invalidateQueries({ queryKey: ["admin-loan-details", loanId] });
+    },
+    { intervalMs: 5000, enabled: isStaff && Boolean(loanId) },
+  );
+
   const activateLoanMutation = useMutation({
     mutationFn: (input: { loanId: string }) => activateLoanFn({ data: input }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin-loan-details", loanId] });
       void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
+      broadcastSync("LOAN_STATUS_CHANGED");
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -121,6 +134,9 @@ function AdminLoanDetailPage() {
       setCancelLoanReason("");
       void queryClient.invalidateQueries({ queryKey: ["admin-loan-details", loanId] });
       void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
+      broadcastSync("LOAN_STATUS_CHANGED");
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -133,6 +149,9 @@ function AdminLoanDetailPage() {
       setRejectLoanReason("");
       void queryClient.invalidateQueries({ queryKey: ["admin-loan-details", loanId] });
       void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
+      broadcastSync("LOAN_STATUS_CHANGED");
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -142,11 +161,15 @@ function AdminLoanDetailPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin-loan-details", loanId] });
       void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
+      broadcastSync("LOAN_STATUS_CHANGED");
     },
     onError: (err: Error) => {
       toast.error(err.message || "Disbursement failed. Loan status remains approved for retry.");
       void queryClient.invalidateQueries({ queryKey: ["admin-loan-details", loanId] });
       void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
+      broadcastSync("LOAN_STATUS_CHANGED");
     },
   });
 
@@ -165,6 +188,10 @@ function AdminLoanDetailPage() {
       setRejectGuarantorReason("");
       void queryClient.invalidateQueries({ queryKey: ["admin-loan-details", loanId] });
       void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
+      broadcastSync("GUARANTOR_UPDATED");
+      broadcastSync("LOAN_STATUS_CHANGED");
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -179,12 +206,24 @@ function AdminLoanDetailPage() {
       );
       void queryClient.invalidateQueries({ queryKey: ["admin-loan-details", loanId] });
       void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
+      broadcastSync("LOAN_STATUS_CHANGED");
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
-  if (loading || isLoading || !isStaff) {
+  if (loading || !isStaff) {
     return <LoadingPage />;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-muted/30">
+        <SiteHeader />
+        <main className="mx-auto max-w-6xl px-4 py-8 space-y-6">
+          <DetailSkeleton />
+        </main>
+      </div>
+    );
   }
 
   if (!loan) {

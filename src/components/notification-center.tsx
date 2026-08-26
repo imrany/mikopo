@@ -45,6 +45,7 @@ import {
 import { useWebPush } from "@/hooks/use-web-push";
 import { useAppConfig } from "@/lib/config-context";
 import { useUrlBooleanState, useUrlStringState } from "@/lib/use-url-search-state";
+import { useRealtimeSync, broadcastSync } from "@/hooks/use-realtime";
 import { AnimatePresence, motion } from "motion/react";
 
 export function NotificationBell() {
@@ -133,11 +134,16 @@ export function NotificationBell() {
     }
   }, [isOpen, selectedNotificationId]);
 
-  useEffect(() => {
-    refreshCount();
-    const interval = setInterval(refreshCount, 12000); // Poll for new notifications every 12s
-    return () => clearInterval(interval);
-  }, []);
+  useRealtimeSync(
+    ["NOTIFICATION_RECEIVED", "NOTIFICATION_READ", "LOAN_STATUS_CHANGED", "PAYMENT_RECEIVED"],
+    () => {
+      void refreshCount();
+      if (isOpen || Boolean(selectedNotificationId)) {
+        void loadNotifications();
+      }
+    },
+    { intervalMs: 8000 },
+  );
 
   function handleOpenChange(open: boolean) {
     setIsOpen(open);
@@ -153,6 +159,7 @@ export function NotificationBell() {
       await markNotificationAsRead({ data: { notificationId: id } });
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
       setUnreadCount((c) => Math.max(0, c - 1));
+      broadcastSync("NOTIFICATION_READ");
     } catch {
       // ignore
     }
@@ -163,6 +170,7 @@ export function NotificationBell() {
       await markAllNotificationsAsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
+      broadcastSync("NOTIFICATION_READ");
     } catch {
       // ignore
     }

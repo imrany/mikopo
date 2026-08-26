@@ -6,6 +6,7 @@ import { AdminNav } from "@/components/admin-nav";
 import { UserManagement } from "@/components/user-management";
 import { PhoneChangeManagement } from "@/components/phone-change-management";
 import { LoadingPage } from "@/components/loading-page";
+import { useRealtimeSync } from "@/hooks/use-realtime";
 import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/_authenticated/admin/users")({
@@ -48,10 +49,6 @@ function AdminUsersPage() {
     }
   }, [loading, isStaff, canManageUsers, canManagePhone, hasPermission, navigate]);
 
-  if (loading || !isStaff || (!canManageUsers && !canManagePhone)) {
-    return <LoadingPage />;
-  }
-
   const handleRefresh = () => {
     if (canManageUsers) {
       void queryClient.invalidateQueries({ queryKey: ["admin-users"] });
@@ -61,6 +58,18 @@ function AdminUsersPage() {
       void queryClient.invalidateQueries({ queryKey: ["phone-change-requests"] });
     }
   };
+
+  useRealtimeSync(
+    ["USER_PROFILE_UPDATED", "LOAN_STATUS_CHANGED", "CREDIBILITY_UPDATED"],
+    () => {
+      handleRefresh();
+    },
+    { intervalMs: 8000, enabled: isStaff },
+  );
+
+  if (loading || !isStaff || (!canManageUsers && !canManagePhone)) {
+    return <LoadingPage />;
+  }
 
   return (
     <div className="min-h-screen bg-muted/30">

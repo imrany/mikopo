@@ -16,8 +16,9 @@ import {
   History,
   AlertCircle,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { useRealtimeSync } from "@/hooks/use-realtime";
 import { SiteHeader } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -82,8 +83,9 @@ function tierFor(score: number) {
 }
 
 function Dashboard() {
-  const { profile, canAccessUserFeatures, isStaff } = useAuth();
+  const { profile, canAccessUserFeatures, isStaff, refresh: refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const centerFn = useServerFn(getMyLoanCenter);
 
   useEffect(() => {
@@ -98,6 +100,22 @@ function Dashboard() {
     staleTime: 5000,
     refetchOnWindowFocus: true,
   });
+
+  useRealtimeSync(
+    [
+      "LOAN_STATUS_CHANGED",
+      "PAYMENT_RECEIVED",
+      "CREDIBILITY_UPDATED",
+      "GUARANTOR_UPDATED",
+      "USER_PROFILE_UPDATED",
+    ],
+    () => {
+      void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
+      void queryClient.invalidateQueries({ queryKey: ["loan-timeline"] });
+      void refreshProfile();
+    },
+    { intervalMs: 6000 },
+  );
 
   // Define the active, operational pipeline statuses that block a new loan
   const blockingStatuses = [

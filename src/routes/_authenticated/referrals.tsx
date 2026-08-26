@@ -4,7 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Users, Copy, Check, Share2, Award, Zap, UserCheck, Gift, Lock } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
-import { LoadingPage } from "@/components/loading-page";
+import { DashboardSkeleton } from "@/components/ui/skeleton-loaders";
+import { useRealtimeSync } from "@/hooks/use-realtime";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,10 +52,18 @@ function ReferralPage() {
   const { businessName } = useAppConfig();
   const activeBusinessName = businessName || "our platform";
   const getReferralsFn = useServerFn(getReferralData);
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["referrals-overview"],
     queryFn: () => getReferralsFn(),
   });
+
+  useRealtimeSync(
+    ["REFERRAL_UPDATED", "CREDIBILITY_UPDATED", "USER_PROFILE_UPDATED"],
+    () => {
+      void refetch();
+    },
+    { intervalMs: 8000 },
+  );
 
   const [siteOrigin, setSiteOrigin] = useState("");
   const [copiedCode, setCopiedCode] = useState(false);
@@ -84,7 +93,14 @@ function ReferralPage() {
   }
 
   if (isLoading) {
-    return <LoadingPage />;
+    return (
+      <div className="min-h-screen bg-muted/30">
+        <SiteHeader />
+        <main className="mx-auto max-w-6xl px-4 py-8 space-y-8">
+          <DashboardSkeleton />
+        </main>
+      </div>
+    );
   }
 
   if (error || !data) {

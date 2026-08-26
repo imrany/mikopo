@@ -37,7 +37,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
 import { formatKes } from "@/lib/format";
-import { useRealtimeTable } from "@/hooks/use-realtime";
+import { useRealtimeTable, broadcastSync } from "@/hooks/use-realtime";
 import { generateReceiptPDF } from "@/lib/receipt-pdf";
 import { fireCelebrationConfetti } from "@/lib/confetti";
 import type { UserGuarantor, LoanProduct } from "@/generated/client";
@@ -256,6 +256,9 @@ function LoansPage() {
       setAgreedToLoanTerms(false);
       navigate({ to: "/loans", search: (prev) => ({ ...prev, tab: undefined }) });
       void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      broadcastSync("LOAN_STATUS_CHANGED");
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -265,6 +268,10 @@ function LoansPage() {
     onSuccess: () => {
       fireCelebrationConfetti();
       void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      broadcastSync("GUARANTOR_UPDATED");
+      broadcastSync("LOAN_STATUS_CHANGED");
     },
     onError: (error: Error) => toast.error(error.message),
   });

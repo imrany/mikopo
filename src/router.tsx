@@ -6,11 +6,11 @@ export const getRouter = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 30000,
+        staleTime: 12000,
         gcTime: 1000 * 60 * 60 * 24, // Keep cached data for 24 hours
         networkMode: "offlineFirst", // Return cached queries immediately offline
         refetchOnReconnect: true, // Automatically re-fetch in background on reconnect
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: true, // Seamlessly update data in background when user returns to window
         retry: 1,
       },
       mutations: {

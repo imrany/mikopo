@@ -36,6 +36,7 @@ import { formatKes } from "@/lib/format";
 import { startRepayment } from "@/lib/loans.functions";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useUrlStringState } from "@/lib/use-url-search-state";
+import { broadcastSync } from "@/lib/realtime-sync";
 
 export interface RepayLoanDialogProps {
   loan: {
@@ -242,6 +243,7 @@ function RepayLoanFormBody({
       void queryClient.invalidateQueries({ queryKey: ["my-loan-center-dashboard"] });
       void queryClient.invalidateQueries({ queryKey: ["my-repayments"] });
       void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      broadcastSync("PAYMENT_RECEIVED");
 
       let polls = 0;
       const interval = setInterval(() => {
@@ -250,11 +252,12 @@ function RepayLoanFormBody({
         void queryClient.invalidateQueries({ queryKey: ["my-loan-center-dashboard"] });
         void queryClient.invalidateQueries({ queryKey: ["my-repayments"] });
         void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+        broadcastSync("PAYMENT_RECEIVED");
 
         if (polls >= 10) {
           clearInterval(interval);
         }
-      }, 3000);
+      }, 2500);
     },
     onError: (err: Error) => {
       toast.error(err.message || "Failed to initiate M-Pesa repayment");
