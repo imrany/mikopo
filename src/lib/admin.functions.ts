@@ -2033,30 +2033,30 @@ export const saveAdminRules = createServerFn({ method: "POST" })
   });
 
 async function wipeEntireDatabase() {
-  return await prisma.$transaction(async (tx) => {
-    await tx.supportResponse.deleteMany({});
-    await tx.supportTicket.deleteMany({});
-    await tx.phoneChangeRequest.deleteMany({});
-    await tx.loanRepayment.deleteMany({});
-    await tx.mpesaTransaction.deleteMany({});
-    await tx.loanGuarantor.deleteMany({});
-    await tx.loanStatusEvent.deleteMany({});
-    await tx.loan.deleteMany({});
-    await tx.userGuarantor.deleteMany({});
-    await tx.referralReward.deleteMany({});
-    await tx.notification.deleteMany({});
-    await tx.pushSubscription.deleteMany({});
-    await tx.userSession.deleteMany({});
-    await tx.testimonial.deleteMany({});
-    await tx.newsletterSubscriber.deleteMany({});
-    await tx.auditLog.deleteMany({});
-    await tx.heroImagePreset.deleteMany({});
-    await tx.darajaCredentials.deleteMany({});
-    await tx.loanProduct.deleteMany({});
-    await tx.userRole.deleteMany({});
-    await tx.profile.deleteMany({});
-    await tx.businessSettings.deleteMany({});
-  });
+  return await prisma.$transaction([
+    prisma.supportResponse.deleteMany({}),
+    prisma.supportTicket.deleteMany({}),
+    prisma.phoneChangeRequest.deleteMany({}),
+    prisma.loanRepayment.deleteMany({}),
+    prisma.mpesaTransaction.deleteMany({}),
+    prisma.loanGuarantor.deleteMany({}),
+    prisma.loanStatusEvent.deleteMany({}),
+    prisma.referralReward.deleteMany({}),
+    prisma.loan.deleteMany({}),
+    prisma.userGuarantor.deleteMany({}),
+    prisma.notification.deleteMany({}),
+    prisma.pushSubscription.deleteMany({}),
+    prisma.userSession.deleteMany({}),
+    prisma.testimonial.deleteMany({}),
+    prisma.newsletterSubscriber.deleteMany({}),
+    prisma.auditLog.deleteMany({}),
+    prisma.heroImagePreset.deleteMany({}),
+    prisma.darajaCredentials.deleteMany({}),
+    prisma.loanProduct.deleteMany({}),
+    prisma.userRole.deleteMany({}),
+    prisma.profile.deleteMany({}),
+    prisma.businessSettings.deleteMany({}),
+  ]);
 }
 
 export const deleteBusinessFn = createServerFn({ method: "POST" })

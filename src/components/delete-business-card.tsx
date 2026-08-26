@@ -12,13 +12,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -197,35 +197,44 @@ export function DeleteBusinessCard() {
         </CardFooter>
       </Card>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={isOpen} onOpenChange={(open) => !deleteMutation.isPending && setIsOpen(open)}>
-        <DialogContent className="max-w-lg p-6">
-          <DialogHeader>
-            <div className="flex items-center gap-2 text-destructive mb-1">
-              <ShieldAlert className="h-5 w-5" />
-              <DialogTitle className="text-lg font-bold">
-                Delete Business & Wipe Database
-              </DialogTitle>
-            </div>
-            <DialogDescription className="text-xs text-muted-foreground">
-              You are about to permanently delete{" "}
-              <strong className="text-foreground">{cleanBusinessName}</strong> and wipe everything
-              in the database.
-            </DialogDescription>
-          </DialogHeader>
+      {/* Delete Confirmation Side Sheet */}
+      <Sheet open={isOpen} onOpenChange={(open) => !deleteMutation.isPending && setIsOpen(open)}>
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-lg flex flex-col justify-between p-0 gap-0 border-l border-border bg-background"
+        >
+          {/* Header */}
+          <div className="p-6 pb-4 border-b border-border/80 bg-muted/20">
+            <SheetHeader className="text-left space-y-1.5">
+              <div className="flex items-center gap-2 text-destructive">
+                <div className="p-2 rounded-lg bg-destructive/15">
+                  <ShieldAlert className="h-5 w-5" />
+                </div>
+                <SheetTitle className="text-lg font-bold text-destructive">
+                  Delete Business & Wipe Database
+                </SheetTitle>
+              </div>
+              <SheetDescription className="text-xs text-muted-foreground leading-relaxed">
+                You are about to permanently delete{" "}
+                <strong className="text-foreground">{cleanBusinessName}</strong> and purge all
+                system records from the database.
+              </SheetDescription>
+            </SheetHeader>
+          </div>
 
-          <div className="space-y-5 my-2">
+          {/* Scrollable Content Body */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-5">
             <Alert
               variant="destructive"
-              className="py-2.5 px-3 border-destructive/30 bg-destructive/10"
+              className="py-3 px-3.5 border-destructive/30 bg-destructive/10"
             >
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle className="text-xs font-semibold">
                 Warning: This action cannot be undone
               </AlertTitle>
-              <AlertDescription className="text-[11px] mt-0.5">
-                All borrowers, loans, repayments, audit logs, and settings will be permanently
-                erased.
+              <AlertDescription className="text-[11px] mt-0.5 leading-relaxed">
+                All borrowers, loans, repayments, M-Pesa records, audit logs, and settings will be
+                permanently erased. The platform will reset back to the initial setup wizard.
               </AlertDescription>
             </Alert>
 
@@ -237,15 +246,15 @@ export function DeleteBusinessCard() {
               <RadioGroup
                 value={deleteOption}
                 onValueChange={(val: "export_and_delete" | "delete_only") => setDeleteOption(val)}
-                className="space-y-2"
+                className="space-y-2.5"
                 disabled={deleteMutation.isPending}
               >
                 {/* Option 1 */}
                 <div
                   onClick={() => !deleteMutation.isPending && setDeleteOption("export_and_delete")}
-                  className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                  className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
                     deleteOption === "export_and_delete"
-                      ? "border-primary bg-primary/5 ring-1 ring-primary/40"
+                      ? "border-primary bg-primary/5 ring-1 ring-primary/40 shadow-xs"
                       : "border-border hover:bg-muted/40"
                   }`}
                 >
@@ -266,7 +275,7 @@ export function DeleteBusinessCard() {
                         Recommended
                       </Badge>
                     </div>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
                       Generates and downloads a complete multi-sheet Excel spreadsheet (.xlsx) with
                       all platform data before permanently wiping the database.
                     </p>
@@ -276,9 +285,9 @@ export function DeleteBusinessCard() {
                 {/* Option 2 */}
                 <div
                   onClick={() => !deleteMutation.isPending && setDeleteOption("delete_only")}
-                  className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                  className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
                     deleteOption === "delete_only"
-                      ? "border-destructive bg-destructive/5 ring-1 ring-destructive/40"
+                      ? "border-destructive bg-destructive/5 ring-1 ring-destructive/40 shadow-xs"
                       : "border-border hover:bg-muted/40"
                   }`}
                 >
@@ -290,7 +299,7 @@ export function DeleteBusinessCard() {
                     >
                       Delete business (without exporting the data as excel)
                     </Label>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
                       Directly and immediately wipes all database records without creating or
                       downloading any Excel backup.
                     </p>
@@ -300,7 +309,7 @@ export function DeleteBusinessCard() {
             </div>
 
             {/* Step 2: Confirmation input */}
-            <div className="space-y-2 pt-1 border-t border-border">
+            <div className="space-y-2.5 pt-2 border-t border-border">
               <Label
                 htmlFor="confirm-delete-input"
                 className="text-xs font-semibold text-foreground"
@@ -322,57 +331,60 @@ export function DeleteBusinessCard() {
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
                 disabled={deleteMutation.isPending}
-                className="h-9 text-xs"
+                className="h-10 text-xs"
                 autoComplete="off"
               />
             </div>
 
             {statusMessage && (
-              <div className="flex items-center gap-2 p-2.5 rounded-md bg-muted text-xs text-foreground">
+              <div className="flex items-center gap-2.5 p-3 rounded-lg bg-muted text-xs text-foreground animate-pulse">
                 <LucideLoader className="h-4 w-4 animate-spin text-primary shrink-0" />
                 <span>{statusMessage}</span>
               </div>
             )}
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsOpen(false)}
-              disabled={deleteMutation.isPending}
-              className="text-xs"
-            >
-              Cancel
-            </Button>
-            <Button
-              id="confirm-delete-business-btn"
-              variant="destructive"
-              size="sm"
-              onClick={() => deleteMutation.mutate()}
-              disabled={!isConfirmValid || deleteMutation.isPending}
-              className="gap-2 text-xs font-semibold shadow-xs"
-            >
-              {deleteMutation.isPending ? (
-                <>
-                  <LucideLoader className="h-3.5 w-3.5 animate-spin" />
-                  <span>Processing Deletion...</span>
-                </>
-              ) : deleteOption === "export_and_delete" ? (
-                <>
-                  <Download className="h-3.5 w-3.5" />
-                  <span>Export Data & Delete Business</span>
-                </>
-              ) : (
-                <>
-                  <Trash2 className="h-3.5 w-3.5" />
-                  <span>Delete Business (No Export)</span>
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          {/* Footer */}
+          <div className="p-6 pt-4 border-t border-border/80 bg-muted/10">
+            <SheetFooter className="gap-2 sm:gap-2 flex flex-col-reverse sm:flex-row sm:justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsOpen(false)}
+                disabled={deleteMutation.isPending}
+                className="text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                id="confirm-delete-business-btn"
+                variant="destructive"
+                size="sm"
+                onClick={() => deleteMutation.mutate()}
+                disabled={!isConfirmValid || deleteMutation.isPending}
+                className="gap-2 text-xs font-semibold shadow-xs"
+              >
+                {deleteMutation.isPending ? (
+                  <>
+                    <LucideLoader className="h-3.5 w-3.5 animate-spin" />
+                    <span>Processing Deletion...</span>
+                  </>
+                ) : deleteOption === "export_and_delete" ? (
+                  <>
+                    <Download className="h-3.5 w-3.5" />
+                    <span>Export Data & Delete Business</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Delete Business (No Export)</span>
+                  </>
+                )}
+              </Button>
+            </SheetFooter>
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }
