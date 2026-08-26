@@ -10,6 +10,8 @@ import {
   SELECTION_CHANGE_COMMAND,
   COMMAND_PRIORITY_LOW,
   $createParagraphNode,
+  $createTextNode,
+  $isLineBreakNode,
   type LexicalEditor,
   type ElementFormatType,
 } from "lexical";
@@ -205,18 +207,28 @@ function ValueSyncPlugin({
         if (!value) return;
 
         if (mode === "html") {
+          let htmlVal = value;
+          if (!/<(p|h[1-6]|div|ul|ol|blockquote|table|pre)/i.test(value)) {
+            htmlVal = value
+              .split(/\r?\n/)
+              .map((line) => (line.trim() ? `<p>${line}</p>` : "<p><br></p>"))
+              .join("");
+          }
           const parser = new DOMParser();
-          const dom = parser.parseFromString(value, "text/html");
+          const dom = parser.parseFromString(htmlVal, "text/html");
           const nodes = $generateNodesFromDOM(editor, dom);
           root.append(...nodes);
         } else if (mode === "markdown") {
           $convertFromMarkdownString(value, TRANSFORMERS);
         } else {
-          const p = $createParagraphNode();
-          p.append(
-            ...$generateNodesFromDOM(editor, new DOMParser().parseFromString(value, "text/html")),
-          );
-          root.append(p);
+          const lines = value.split(/\r?\n/);
+          for (const line of lines) {
+            const p = $createParagraphNode();
+            if (line) {
+              p.append($createTextNode(line));
+            }
+            root.append(p);
+          }
         }
       });
     });
@@ -321,9 +333,96 @@ function EditorToolbar({
         return;
       }
 
+      // 1. Text is highlighted (range selection with text)
+      if (!selection.isCollapsed()) {
+        const selectedText = selection.getTextContent();
+        const anchorNode = selection.anchor.getNode();
+        const topLevelElement =
+          anchorNode.getKey() === "root" ? anchorNode : anchorNode.getTopLevelElementOrThrow();
+
+        if ($isHeadingNode(topLevelElement) && topLevelElement.getTag() === tag) {
+          $setBlocksType(selection, () => $createParagraphNode());
+          setBlockType("paragraph");
+          return;
+        }
+
+        const blockText = topLevelElement.getTextContent();
+        // If selection is only a subset of the block, split it out into its own heading block
+        if (selectedText.trim() && blockText.trim() !== selectedText.trim()) {
+          selection.removeText();
+          const headingNode = $createHeadingNode(tag);
+          headingNode.append($createTextNode(selectedText));
+
+          const curAnchor = selection.anchor.getNode();
+          const curBlock =
+            curAnchor.getKey() === "root" ? curAnchor : curAnchor.getTopLevelElementOrThrow();
+          curBlock.insertAfter(headingNode);
+
+          if (curBlock.getTextContent().trim() === "") {
+            curBlock.remove();
+          }
+
+          headingNode.select();
+          setBlockType(tag);
+          return;
+        }
+
+        $setBlocksType(selection, () => $createHeadingNode(tag));
+        setBlockType(tag);
+        return;
+      }
+
+      // 2. Cursor is collapsed (single point)
       const anchorNode = selection.anchor.getNode();
       const topLevelElement =
         anchorNode.getKey() === "root" ? anchorNode : anchorNode.getTopLevelElementOrThrow();
+
+      // Check if block contains LineBreakNode (e.g. from pasted lines or soft breaks)
+      const children = topLevelElement.getChildren();
+      const hasLineBreaks = children.some((c) => $isLineBreakNode(c));
+
+      if (hasLineBreaks) {
+        const lines: any[][] = [[]];
+        for (const child of children) {
+          if ($isLineBreakNode(child)) {
+            lines.push([]);
+          } else {
+            lines[lines.length - 1].push(child);
+          }
+        }
+
+        let targetParagraph: any = null;
+        const newParagraphs = lines.map((lineNodes) => {
+          const p = $createParagraphNode();
+          let containsAnchor = false;
+          for (const node of lineNodes) {
+            if (node.getKey() === anchorNode.getKey()) {
+              containsAnchor = true;
+            }
+            p.append(node);
+          }
+          if (containsAnchor && !targetParagraph) {
+            targetParagraph = p;
+          }
+          return p;
+        });
+
+        for (const p of newParagraphs) {
+          topLevelElement.insertBefore(p);
+        }
+        topLevelElement.remove();
+
+        const activePara = targetParagraph || newParagraphs[0];
+        if (activePara) {
+          activePara.select();
+          const newSelection = $getSelection();
+          if ($isRangeSelection(newSelection)) {
+            $setBlocksType(newSelection, () => $createHeadingNode(tag));
+            setBlockType(tag);
+            return;
+          }
+        }
+      }
 
       const isCurrentHeading = $isHeadingNode(topLevelElement) && topLevelElement.getTag() === tag;
 
@@ -887,10 +986,44 @@ export function LexicalRichEditor({
     } else if (mode === "html") {
       if (formatType === "h1" || formatType === "h2" || formatType === "h3") {
         const tag = formatType;
-        const wrapped = `<${tag}>${selectedText || "Heading"}</${tag}>`;
-        newText = currentText.substring(0, start) + wrapped + currentText.substring(end);
-        newStart = start + tag.length + 2;
-        newEnd = newStart + (selectedText ? selectedText.length : 7);
+        if (selectedText) {
+          const isEnclosed =
+            selectedText.startsWith(`<${tag}>`) && selectedText.endsWith(`</${tag}>`);
+          let wrapped = "";
+          if (isEnclosed) {
+            wrapped = `<p>${selectedText.slice(tag.length + 2, -tag.length - 3)}</p>`;
+          } else {
+            const clean = selectedText
+              .replace(/^<(p|h[1-6])>/i, "")
+              .replace(/<\/(p|h[1-6])>$/i, "");
+            wrapped = `<${tag}>${clean}</${tag}>`;
+          }
+          newText = currentText.substring(0, start) + wrapped + currentText.substring(end);
+          newStart = start;
+          newEnd = start + wrapped.length;
+        } else {
+          const beforeCursor = currentText.substring(0, start);
+          const lastNewline = beforeCursor.lastIndexOf("\n");
+          const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
+          const lineEnd =
+            currentText.indexOf("\n", end) === -1
+              ? currentText.length
+              : currentText.indexOf("\n", end);
+          const currentLine = currentText.substring(lineStart, lineEnd);
+
+          let updatedLine = "";
+          if (currentLine.startsWith(`<${tag}>`) && currentLine.endsWith(`</${tag}>`)) {
+            const inner = currentLine.slice(tag.length + 2, -tag.length - 3);
+            updatedLine = `<p>${inner}</p>`;
+          } else {
+            const clean = currentLine.replace(/^<(p|h[1-6])>/i, "").replace(/<\/(p|h[1-6])>$/i, "");
+            updatedLine = `<${tag}>${clean || "Heading"}</${tag}>`;
+          }
+          newText =
+            currentText.substring(0, lineStart) + updatedLine + currentText.substring(lineEnd);
+          newStart = lineStart + tag.length + 2;
+          newEnd = newStart + (currentLine ? currentLine.length : 7);
+        }
       } else if (formatType === "bold") {
         const wrapped = `<strong>${selectedText || "bold text"}</strong>`;
         newText = currentText.substring(0, start) + wrapped + currentText.substring(end);
@@ -1083,7 +1216,7 @@ export function LexicalRichEditor({
         <div className="flex items-center justify-between px-3 py-1 bg-muted/20 border-t text-[11px] text-muted-foreground select-none">
           <span className="flex items-center gap-2">
             <span className="capitalize font-medium text-foreground/80">
-              {`Lexical • ${mode === "markdown" ? "Markdown Mode" : mode === "html" ? "HTML Mode" : "Rich Text"}`}
+              {mode === "markdown" ? "Markdown Mode" : mode === "html" ? "HTML Mode" : "Rich Text"}
             </span>
             {isSourceMode && (
               <span className="bg-primary/10 text-primary px-1.5 py-0.2 rounded font-mono text-[10px]">
