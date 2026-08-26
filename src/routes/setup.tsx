@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Building2, CheckCircle2, LucideLoader, Lock, UserCog } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -60,6 +60,7 @@ function SetupPage() {
   const statusFn = useServerFn(getSetupStatus);
   const submitSetup = useServerFn(completeSetup);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: status, isLoading } = useQuery({
     queryKey: ["setup-status"],
@@ -123,6 +124,16 @@ function SetupPage() {
         toast.error(result.error);
         return;
       }
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.removeItem("mikopo_cached_business_config");
+        } catch (_err) {
+          // ignore cache clearing failure
+        }
+      }
+      await queryClient.invalidateQueries({ queryKey: ["public-business-config"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      await queryClient.invalidateQueries({ queryKey: ["setup-status"] });
       toast.success("Setup complete — sign in as the administrator");
       navigate({ to: "/auth", replace: true });
     } catch (error) {

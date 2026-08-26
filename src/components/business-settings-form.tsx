@@ -86,29 +86,32 @@ export function BusinessSettingsForm() {
   const [lastAutoSavedAt, setLastAutoSavedAt] = useState<Date | null>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const isInitialLoadRef = useRef(true);
+  const isDirtyRef = useRef(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (overview?.settings && isInitialLoadRef.current) {
-      setBusinessName(overview.settings.business_name || "");
-      setBusinessLocation(overview.settings.business_location || "");
-      setSupportPhone(overview.settings.support_phone || "");
-      setSupportEmail(overview.settings.support_email || "");
-      setLogoUrl(overview.settings.logo_url || "");
-      setFaviconUrl(overview.settings.favicon_url || "");
+    if (overview?.settings) {
+      if (isInitialLoadRef.current || !isDirtyRef.current) {
+        setBusinessName(overview.settings.business_name || "");
+        setBusinessLocation(overview.settings.business_location || "");
+        setSupportPhone(overview.settings.support_phone || "");
+        setSupportEmail(overview.settings.support_email || "");
+        setLogoUrl(overview.settings.logo_url || "");
+        setFaviconUrl(overview.settings.favicon_url || "");
 
-      if (overview.settings.primary_color) setPrimaryColor(overview.settings.primary_color);
-      if (overview.settings.secondary_color) setSecondaryColor(overview.settings.secondary_color);
-      if (overview.settings.accent_color) setAccentColor(overview.settings.accent_color);
-      if (overview.settings.background_color)
-        setBackgroundColor(overview.settings.background_color);
-      if (overview.settings.foreground_color)
-        setForegroundColor(overview.settings.foreground_color);
-      if (overview.settings.gold_color) setGoldColor(overview.settings.gold_color);
+        if (overview.settings.primary_color) setPrimaryColor(overview.settings.primary_color);
+        if (overview.settings.secondary_color) setSecondaryColor(overview.settings.secondary_color);
+        if (overview.settings.accent_color) setAccentColor(overview.settings.accent_color);
+        if (overview.settings.background_color)
+          setBackgroundColor(overview.settings.background_color);
+        if (overview.settings.foreground_color)
+          setForegroundColor(overview.settings.foreground_color);
+        if (overview.settings.gold_color) setGoldColor(overview.settings.gold_color);
 
-      setTermsContent(overview.settings.terms_content || DEFAULT_TERMS_MARKDOWN);
-      setPrivacyContent(overview.settings.privacy_content || DEFAULT_PRIVACY_MARKDOWN);
-      isInitialLoadRef.current = false;
+        setTermsContent(overview.settings.terms_content || DEFAULT_TERMS_MARKDOWN);
+        setPrivacyContent(overview.settings.privacy_content || DEFAULT_PRIVACY_MARKDOWN);
+        isInitialLoadRef.current = false;
+      }
     }
   }, [overview]);
 
@@ -247,6 +250,7 @@ export function BusinessSettingsForm() {
       delay = 700,
     ) => {
       if (isInitialLoadRef.current) return;
+      isDirtyRef.current = true;
       setIsAutoSaving(true);
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = setTimeout(() => {

@@ -287,8 +287,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setSession({ token, userId });
       void loadIdentity(token);
+      void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      void queryClient.invalidateQueries({ queryKey: ["public-business-config"] });
     },
-    [loadIdentity],
+    [loadIdentity, queryClient],
   );
 
   const refresh = useCallback(async () => {
