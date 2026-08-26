@@ -7,6 +7,7 @@ import { BusinessSettingsForm } from "@/components/business-settings-form";
 import { DarajaCredentialsForm } from "@/components/daraja-credentials-form";
 import { SmtpSettingsForm } from "@/components/smtp-settings-form";
 import { VapidSettingsForm } from "@/components/vapid-settings-form";
+import { DeleteBusinessCard } from "@/components/delete-business-card";
 import { LoadingPage } from "@/components/loading-page";
 import { useAuth } from "@/lib/auth-context";
 
@@ -68,6 +69,7 @@ function AdminSettingsPage() {
         <VapidSettingsForm />
         <DarajaCredentialsForm />
         <SmtpSettingsForm />
+        <DeleteBusinessCard />
       </main>
     </div>
   );

@@ -221,20 +221,23 @@ export function UserManagement() {
             Edit profiles, adjust credit scores, block or delete accounts.
           </CardDescription>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleQuickExportUsers}
-          disabled={isExportingUsers}
-          className="gap-1.5 text-xs text-primary border-primary/30 hover:bg-primary/50 self-start sm:self-auto"
-        >
-          {isExportingUsers ? (
-            <LucideLoader className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <FileSpreadsheet className="h-3.5 w-3.5 text-primary" />
-          )}
-          <span>Export Users (Excel)</span>
-        </Button>
+        {users.length > 0 && (
+          <Button
+            id="export-users-btn"
+            variant="outline"
+            size="sm"
+            onClick={handleQuickExportUsers}
+            disabled={isExportingUsers}
+            className="gap-1.5 text-xs text-primary border-primary/30 hover:bg-primary/50 self-start sm:self-auto"
+          >
+            {isExportingUsers ? (
+              <LucideLoader className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <FileSpreadsheet className="h-3.5 w-3.5 text-primary" />
+            )}
+            <span>Export Users (Excel)</span>
+          </Button>
+        )}
       </CardHeader>
       <CardContent className="overflow-x-auto">
         {isLoading ? (

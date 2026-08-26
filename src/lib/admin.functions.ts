@@ -2031,3 +2031,76 @@ export const saveAdminRules = createServerFn({ method: "POST" })
 
     return { ok: true as const, message: "App rules and operational policies saved successfully." };
   });
+
+export async function wipeEntireDatabase() {
+  return await prisma.$transaction(async (tx) => {
+    await tx.supportResponse.deleteMany({});
+    await tx.supportTicket.deleteMany({});
+    await tx.phoneChangeRequest.deleteMany({});
+    await tx.loanRepayment.deleteMany({});
+    await tx.mpesaTransaction.deleteMany({});
+    await tx.loanGuarantor.deleteMany({});
+    await tx.loanStatusEvent.deleteMany({});
+    await tx.loan.deleteMany({});
+    await tx.userGuarantor.deleteMany({});
+    await tx.referralReward.deleteMany({});
+    await tx.notification.deleteMany({});
+    await tx.pushSubscription.deleteMany({});
+    await tx.userSession.deleteMany({});
+    await tx.testimonial.deleteMany({});
+    await tx.newsletterSubscriber.deleteMany({});
+    await tx.auditLog.deleteMany({});
+    await tx.heroImagePreset.deleteMany({});
+    await tx.darajaCredentials.deleteMany({});
+    await tx.loanProduct.deleteMany({});
+    await tx.userRole.deleteMany({});
+    await tx.profile.deleteMany({});
+    await tx.businessSettings.deleteMany({});
+  });
+}
+
+export const deleteBusinessFn = createServerFn({ method: "POST" })
+  .middleware([requireCustomAuth])
+  .validator(
+    z.object({
+      confirmPhrase: z.string(),
+    }),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId, roles } = context;
+
+    const initialSuperAdmin = await prisma.userRole.findFirst({
+      where: { role: "super_admin" },
+      orderBy: { createdAt: "asc" },
+    });
+    const isInitialAdmin = Boolean(initialSuperAdmin && initialSuperAdmin.userId === userId);
+    const isSuperAdmin = roles.includes("super_admin") || isInitialAdmin;
+
+    if (!isSuperAdmin) {
+      throw new Error(
+        "Forbidden: Only a Super Admin or Initial Administrator can delete the business.",
+      );
+    }
+
+    const settings = await prisma.businessSettings.findFirst();
+    const currentName = settings?.businessName?.trim() || "";
+
+    const userPhrase = data.confirmPhrase.trim().toLowerCase();
+    const isValid =
+      userPhrase === "delete" ||
+      (currentName.length > 0 && userPhrase === currentName.toLowerCase()) ||
+      (currentName.length > 0 && userPhrase === `delete ${currentName.toLowerCase()}`);
+
+    if (!isValid) {
+      throw new Error(
+        `Confirmation mismatch. Please type '${currentName}' or 'DELETE' to confirm deletion.`,
+      );
+    }
+
+    await wipeEntireDatabase();
+
+    return {
+      ok: true as const,
+      message: "Business and all database records have been permanently deleted. Platform reset.",
+    };
+  });

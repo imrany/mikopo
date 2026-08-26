@@ -234,20 +234,23 @@ function AdminOverviewPage() {
                   <Badge variant="outline" className="text-xs">
                     {loansQuery.data?.length ?? 0} Total Requests
                   </Badge>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleQuickExportLoans}
-                    disabled={isExportingLoans}
-                    className="gap-1.5 text-xs text-primary border-primary/30 hover:bg-primary/50"
-                  >
-                    {isExportingLoans ? (
-                      <LucideLoader className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <FileSpreadsheet className="h-3.5 w-3.5 text-primary" />
-                    )}
-                    <span>Export Excel</span>
-                  </Button>
+                  {(loansQuery.data?.length ?? 0) > 0 && (
+                    <Button
+                      id="export-loans-queue-btn"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleQuickExportLoans}
+                      disabled={isExportingLoans}
+                      className="gap-1.5 text-xs text-primary border-primary/30 hover:bg-primary/50"
+                    >
+                      {isExportingLoans ? (
+                        <LucideLoader className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <FileSpreadsheet className="h-3.5 w-3.5 text-primary" />
+                      )}
+                      <span>Export Excel</span>
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="overflow-x-auto">

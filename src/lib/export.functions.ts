@@ -255,6 +255,56 @@ export const getExportDataset = createServerFn({ method: "POST" })
       }));
     }
 
+    if (dataset === "all") {
+      const rawMpesa = await prisma.mpesaTransaction.findMany({
+        include: {
+          user: { select: { firstName: true, lastName: true, phone: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      const mpesaFormatted = rawMpesa.map((m) => ({
+        "Transaction ID": m.id,
+        "Loan ID": m.loanId || "N/A",
+        "User Name": m.user ? `${m.user.firstName} ${m.user.lastName}`.trim() : "N/A",
+        "Phone Number": m.phone,
+        "Transaction Kind": m.kind === "stk_push" ? "C2B Loan Repayment" : "B2C Loan Disbursement",
+        "Amount (KES)": Number(m.amount) || 0,
+        "M-Pesa Receipt": m.mpesaReceipt || "N/A",
+        Status: m.status.toUpperCase(),
+        "Result Code": m.resultCode || "N/A",
+        "Result Description": m.resultDesc || "N/A",
+        Timestamp: new Date(m.createdAt).toLocaleString(),
+      }));
+
+      const rawProducts = await prisma.loanProduct.findMany({
+        orderBy: { sortOrder: "asc" },
+      });
+
+      const productsFormatted = rawProducts.map((p) => ({
+        "Product ID": p.id,
+        "Product Name": p.name,
+        Description: p.description || "N/A",
+        "Interest Rate (%)": Number(p.interestRate),
+        "Interest Type": p.interestType,
+        "Term (Days)": p.termDays,
+        "Min Amount (KES)": Number(p.minAmount),
+        "Max Amount (KES)": Number(p.maxAmount),
+        Active: p.active ? "YES" : "NO",
+      }));
+
+      return {
+        loans: loansData,
+        users: usersData,
+        repayments: repaymentsData,
+        mpesaTransactions: mpesaFormatted,
+        guarantors: guarantorsData,
+        auditLogs: auditLogsData,
+        products: productsFormatted,
+        timestamp: new Date().toISOString(),
+      };
+    }
+
     return {
       loans: loansData,
       users: usersData,
@@ -262,5 +312,36 @@ export const getExportDataset = createServerFn({ method: "POST" })
       guarantors: guarantorsData,
       auditLogs: auditLogsData,
       timestamp: new Date().toISOString(),
+    };
+  });
+
+export const getExportCounts = createServerFn({ method: "GET" })
+  .middleware([requireCustomAuth])
+  .handler(async ({ context }) => {
+    const { roles } = context;
+    if (!roles.includes("super_admin") && !roles.includes("staff")) {
+      throw new Error("Forbidden: Staff or Admin privileges required.");
+    }
+
+    const [loansCount, usersCount, repaymentsCount, mpesaCount, guarantorsCount, auditLogsCount] =
+      await Promise.all([
+        prisma.loan.count(),
+        prisma.profile.count(),
+        prisma.loanRepayment.count(),
+        prisma.mpesaTransaction.count(),
+        prisma.loanGuarantor.count(),
+        prisma.auditLog.count(),
+      ]);
+
+    const totalCount =
+      loansCount + usersCount + repaymentsCount + mpesaCount + guarantorsCount + auditLogsCount;
+
+    return {
+      loans: loansCount,
+      users: usersCount,
+      repayments: repaymentsCount + mpesaCount,
+      guarantors: guarantorsCount,
+      auditLogs: auditLogsCount,
+      total: totalCount,
     };
   });

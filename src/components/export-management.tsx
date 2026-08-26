@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   FileSpreadsheet,
@@ -31,16 +31,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getExportDataset } from "@/lib/export.functions";
+import { getExportDataset, getExportCounts } from "@/lib/export.functions";
 import { downloadExcelFromData, downloadMultiSheetExcel } from "@/lib/excel-export";
 import { toast } from "sonner";
 
 export function ExportManagement({ businessName }: { businessName: string }) {
   const getDatasetFn = useServerFn(getExportDataset);
+  const getCountsFn = useServerFn(getExportCounts);
 
   const [loanStatusFilter, setLoanStatusFilter] = useState("all");
   const [userRoleFilter, setUserRoleFilter] = useState("all");
   const [activeExportingKey, setActiveExportingKey] = useState<string | null>(null);
+
+  const { data: counts, isLoading: isLoadingCounts } = useQuery({
+    queryKey: ["admin-export-counts"],
+    queryFn: () => getCountsFn(),
+  });
+
+  const loansCount = counts?.loans ?? 0;
+  const usersCount = counts?.users ?? 0;
+  const repaymentsCount = counts?.repayments ?? 0;
+  const guarantorsCount = counts?.guarantors ?? 0;
+  const auditLogsCount = counts?.auditLogs ?? 0;
+  const totalCount = counts?.total ?? 0;
 
   // Mutation to fetch and trigger download
   const exportMutation = useMutation({
@@ -118,8 +131,10 @@ export function ExportManagement({ businessName }: { businessName: string }) {
           { sheetName: "Loans & Applications", data: res.loans || [] },
           { sheetName: "User Profiles", data: res.users || [] },
           { sheetName: "Loan Repayments", data: res.repayments || [] },
+          { sheetName: "M-Pesa Transactions", data: (res as any).mpesaTransactions || [] },
           { sheetName: "Guarantors", data: res.guarantors || [] },
           { sheetName: "System Audit Logs", data: res.auditLogs || [] },
+          { sheetName: "Loan Products", data: (res as any).products || [] },
         ];
 
         downloadMultiSheetExcel(sheets, `${businessName}_Master_Platform_Backup_${todayStr}`);
@@ -157,27 +172,30 @@ export function ExportManagement({ businessName }: { businessName: string }) {
             </CardDescription>
           </div>
 
-          <Button
-            onClick={() =>
-              exportMutation.mutate({
-                dataset: "all",
-                exportName: "Master Backup",
-              })
-            }
-            disabled={exportMutation.isPending}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold gap-2 shrink-0 self-start md:self-auto shadow-xs"
-          >
-            {activeExportingKey === "all" ? (
-              <LucideLoader className="h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4 text-primary-foreground/80" />
-            )}
-            <span>
-              {activeExportingKey === "all"
-                ? "Generating Master File..."
-                : "Export Full Master Backup (.xlsx)"}
-            </span>
-          </Button>
+          {!isLoadingCounts && totalCount > 0 && (
+            <Button
+              id="master-export-header-btn"
+              onClick={() =>
+                exportMutation.mutate({
+                  dataset: "all",
+                  exportName: "Master Backup",
+                })
+              }
+              disabled={exportMutation.isPending}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold gap-2 shrink-0 self-start md:self-auto shadow-xs"
+            >
+              {activeExportingKey === "all" ? (
+                <LucideLoader className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4 text-primary-foreground/80" />
+              )}
+              <span>
+                {activeExportingKey === "all"
+                  ? "Generating Master File..."
+                  : "Export Full Master Backup (.xlsx)"}
+              </span>
+            </Button>
+          )}
         </CardHeader>
       </Card>
 
@@ -191,7 +209,7 @@ export function ExportManagement({ businessName }: { businessName: string }) {
                 <CreditCard className="h-5 w-5" />
               </div>
               <Badge variant="outline" className="text-[11px]">
-                Loans & Applications
+                {isLoadingCounts ? "..." : `${loansCount} Records`}
               </Badge>
             </div>
             <CardTitle className="text-base font-bold mt-3">Loan Portfolio & Queue</CardTitle>
@@ -221,25 +239,32 @@ export function ExportManagement({ businessName }: { businessName: string }) {
           </CardContent>
           <CardFooter className="p-4 border-t border-border/70 bg-muted/20 flex items-center justify-between">
             <span className="text-[11px] text-muted-foreground font-mono">Format: .xlsx</span>
-            <Button
-              size="sm"
-              onClick={() =>
-                exportMutation.mutate({
-                  dataset: "loans",
-                  statusFilter: loanStatusFilter,
-                  exportName: "Loans",
-                })
-              }
-              disabled={exportMutation.isPending}
-              className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              {activeExportingKey === "loans" ? (
-                <LucideLoader className="h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-              <span>{activeExportingKey === "loans" ? "Exporting..." : "Export Loans Excel"}</span>
-            </Button>
+            {loansCount > 0 ? (
+              <Button
+                id="export-loans-dataset-btn"
+                size="sm"
+                onClick={() =>
+                  exportMutation.mutate({
+                    dataset: "loans",
+                    statusFilter: loanStatusFilter,
+                    exportName: "Loans",
+                  })
+                }
+                disabled={exportMutation.isPending}
+                className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                {activeExportingKey === "loans" ? (
+                  <LucideLoader className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                <span>
+                  {activeExportingKey === "loans" ? "Exporting..." : "Export Loans Excel"}
+                </span>
+              </Button>
+            ) : (
+              <span className="text-xs text-muted-foreground italic">No loan data to export</span>
+            )}
           </CardFooter>
         </Card>
 
@@ -251,7 +276,7 @@ export function ExportManagement({ businessName }: { businessName: string }) {
                 <Users className="h-5 w-5" />
               </div>
               <Badge variant="outline" className="text-[11px]">
-                User Profiles
+                {isLoadingCounts ? "..." : `${usersCount} Profiles`}
               </Badge>
             </div>
             <CardTitle className="text-base font-bold mt-3">Users & Borrower Profiles</CardTitle>
@@ -278,25 +303,32 @@ export function ExportManagement({ businessName }: { businessName: string }) {
           </CardContent>
           <CardFooter className="p-4 border-t border-border/70 bg-muted/20 flex items-center justify-between">
             <span className="text-[11px] text-muted-foreground font-mono">Format: .xlsx</span>
-            <Button
-              size="sm"
-              onClick={() =>
-                exportMutation.mutate({
-                  dataset: "users",
-                  roleFilter: userRoleFilter,
-                  exportName: "Users",
-                })
-              }
-              disabled={exportMutation.isPending}
-              className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              {activeExportingKey === "users" ? (
-                <LucideLoader className="h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-              <span>{activeExportingKey === "users" ? "Exporting..." : "Export Users Excel"}</span>
-            </Button>
+            {usersCount > 0 ? (
+              <Button
+                id="export-users-dataset-btn"
+                size="sm"
+                onClick={() =>
+                  exportMutation.mutate({
+                    dataset: "users",
+                    roleFilter: userRoleFilter,
+                    exportName: "Users",
+                  })
+                }
+                disabled={exportMutation.isPending}
+                className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                {activeExportingKey === "users" ? (
+                  <LucideLoader className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                <span>
+                  {activeExportingKey === "users" ? "Exporting..." : "Export Users Excel"}
+                </span>
+              </Button>
+            ) : (
+              <span className="text-xs text-muted-foreground italic">No user data to export</span>
+            )}
           </CardFooter>
         </Card>
 
@@ -308,7 +340,7 @@ export function ExportManagement({ businessName }: { businessName: string }) {
                 <Database className="h-5 w-5" />
               </div>
               <Badge variant="outline" className="text-[11px]">
-                M-Pesa & Cash Flow
+                {isLoadingCounts ? "..." : `${repaymentsCount} Records`}
               </Badge>
             </div>
             <CardTitle className="text-base font-bold mt-3">Repayments & M-Pesa Log</CardTitle>
@@ -330,26 +362,33 @@ export function ExportManagement({ businessName }: { businessName: string }) {
             <span className="text-[11px] text-muted-foreground font-mono">
               Format: .xlsx (2 Sheets)
             </span>
-            <Button
-              size="sm"
-              onClick={() =>
-                exportMutation.mutate({
-                  dataset: "repayments",
-                  exportName: "Repayments",
-                })
-              }
-              disabled={exportMutation.isPending}
-              className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              {activeExportingKey === "repayments" ? (
-                <LucideLoader className="h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-              <span>
-                {activeExportingKey === "repayments" ? "Exporting..." : "Export Repayments Excel"}
+            {repaymentsCount > 0 ? (
+              <Button
+                id="export-repayments-dataset-btn"
+                size="sm"
+                onClick={() =>
+                  exportMutation.mutate({
+                    dataset: "repayments",
+                    exportName: "Repayments",
+                  })
+                }
+                disabled={exportMutation.isPending}
+                className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                {activeExportingKey === "repayments" ? (
+                  <LucideLoader className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                <span>
+                  {activeExportingKey === "repayments" ? "Exporting..." : "Export Repayments Excel"}
+                </span>
+              </Button>
+            ) : (
+              <span className="text-xs text-muted-foreground italic">
+                No transaction data to export
               </span>
-            </Button>
+            )}
           </CardFooter>
         </Card>
 
@@ -361,7 +400,7 @@ export function ExportManagement({ businessName }: { businessName: string }) {
                 <UserCheck className="h-5 w-5" />
               </div>
               <Badge variant="outline" className="text-[11px]">
-                Guarantor Network
+                {isLoadingCounts ? "..." : `${guarantorsCount} Records`}
               </Badge>
             </div>
             <CardTitle className="text-base font-bold mt-3">Guarantors & Guarantees</CardTitle>
@@ -377,26 +416,33 @@ export function ExportManagement({ businessName }: { businessName: string }) {
           </CardContent>
           <CardFooter className="p-4 border-t border-border/70 bg-muted/20 flex items-center justify-between">
             <span className="text-[11px] text-muted-foreground font-mono">Format: .xlsx</span>
-            <Button
-              size="sm"
-              onClick={() =>
-                exportMutation.mutate({
-                  dataset: "guarantors",
-                  exportName: "Guarantors",
-                })
-              }
-              disabled={exportMutation.isPending}
-              className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              {activeExportingKey === "guarantors" ? (
-                <LucideLoader className="h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-              <span>
-                {activeExportingKey === "guarantors" ? "Exporting..." : "Export Guarantors Excel"}
+            {guarantorsCount > 0 ? (
+              <Button
+                id="export-guarantors-dataset-btn"
+                size="sm"
+                onClick={() =>
+                  exportMutation.mutate({
+                    dataset: "guarantors",
+                    exportName: "Guarantors",
+                  })
+                }
+                disabled={exportMutation.isPending}
+                className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                {activeExportingKey === "guarantors" ? (
+                  <LucideLoader className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                <span>
+                  {activeExportingKey === "guarantors" ? "Exporting..." : "Export Guarantors Excel"}
+                </span>
+              </Button>
+            ) : (
+              <span className="text-xs text-muted-foreground italic">
+                No guarantor data to export
               </span>
-            </Button>
+            )}
           </CardFooter>
         </Card>
 
@@ -408,7 +454,7 @@ export function ExportManagement({ businessName }: { businessName: string }) {
                 <History className="h-5 w-5" />
               </div>
               <Badge variant="outline" className="text-[11px]">
-                Security & Logs
+                {isLoadingCounts ? "..." : `${auditLogsCount} Entries`}
               </Badge>
             </div>
             <CardTitle className="text-base font-bold mt-3">System Audit Trail</CardTitle>
@@ -424,26 +470,33 @@ export function ExportManagement({ businessName }: { businessName: string }) {
           </CardContent>
           <CardFooter className="p-4 border-t border-border/70 bg-muted/20 flex items-center justify-between">
             <span className="text-[11px] text-muted-foreground font-mono">Format: .xlsx</span>
-            <Button
-              size="sm"
-              onClick={() =>
-                exportMutation.mutate({
-                  dataset: "audit_logs",
-                  exportName: "Audit Logs",
-                })
-              }
-              disabled={exportMutation.isPending}
-              className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
-            >
-              {activeExportingKey === "audit_logs" ? (
-                <LucideLoader className="h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-              <span>
-                {activeExportingKey === "audit_logs" ? "Exporting..." : "Export Audit Logs"}
+            {auditLogsCount > 0 ? (
+              <Button
+                id="export-audit-logs-dataset-btn"
+                size="sm"
+                onClick={() =>
+                  exportMutation.mutate({
+                    dataset: "audit_logs",
+                    exportName: "Audit Logs",
+                  })
+                }
+                disabled={exportMutation.isPending}
+                className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                {activeExportingKey === "audit_logs" ? (
+                  <LucideLoader className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                <span>
+                  {activeExportingKey === "audit_logs" ? "Exporting..." : "Export Audit Logs"}
+                </span>
+              </Button>
+            ) : (
+              <span className="text-xs text-muted-foreground italic">
+                No audit log data to export
               </span>
-            </Button>
+            )}
           </CardFooter>
         </Card>
 
@@ -455,15 +508,16 @@ export function ExportManagement({ businessName }: { businessName: string }) {
                 <FileSpreadsheet className="h-5 w-5" />
               </div>
               <Badge className="bg-primary text-primary-foreground text-[11px]">
-                Full Workbook
+                {isLoadingCounts ? "..." : `${totalCount} Total Items`}
               </Badge>
             </div>
             <CardTitle className="text-base font-bold mt-3">
               Master Platform Backup (.xlsx)
             </CardTitle>
             <CardDescription className="text-xs">
-              Generates a single comprehensive Excel workbook file containing 5 dedicated tabs for
-              Loans, Users, Repayments, Guarantors, and Audit Logs.
+              Generates a single comprehensive Excel workbook file containing dedicated tabs for
+              Loans, Users, Repayments, M-Pesa Transactions, Guarantors, Audit Logs, and Loan
+              Products.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-5 pt-0 space-y-2">
@@ -479,26 +533,35 @@ export function ExportManagement({ businessName }: { businessName: string }) {
           </CardContent>
           <CardFooter className="p-4 border-t border-primary/20 bg-primary/5 flex items-center justify-between">
             <span className="text-[11px] text-muted-foreground font-mono">
-              5 Sheets In 1 Workbook
+              Multi-Sheet Workbook
             </span>
-            <Button
-              size="sm"
-              onClick={() =>
-                exportMutation.mutate({
-                  dataset: "all",
-                  exportName: "Master Backup",
-                })
-              }
-              disabled={exportMutation.isPending}
-              className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs"
-            >
-              {activeExportingKey === "all" ? (
-                <LucideLoader className="h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-              <span>{activeExportingKey === "all" ? "Exporting..." : "Download Master Excel"}</span>
-            </Button>
+            {totalCount > 0 ? (
+              <Button
+                id="export-master-backup-btn"
+                size="sm"
+                onClick={() =>
+                  exportMutation.mutate({
+                    dataset: "all",
+                    exportName: "Master Backup",
+                  })
+                }
+                disabled={exportMutation.isPending}
+                className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-xs"
+              >
+                {activeExportingKey === "all" ? (
+                  <LucideLoader className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                <span>
+                  {activeExportingKey === "all" ? "Exporting..." : "Download Master Excel"}
+                </span>
+              </Button>
+            ) : (
+              <span className="text-xs text-muted-foreground italic">
+                No platform data to export
+              </span>
+            )}
           </CardFooter>
         </Card>
       </div>
