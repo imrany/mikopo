@@ -19,7 +19,7 @@ export function BrandMark({
     setHasImageError(false);
   }, [logoUrl]);
 
-  const name = (businessName || "").replace(/\bmicrofinance\b/gi, "").trim() || "Lending Platform";
+  const name = businessName || "";
   const showCustomLogo = Boolean(logoUrl && !hasImageError);
 
   return (
