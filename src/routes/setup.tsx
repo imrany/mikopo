@@ -387,13 +387,10 @@ function SetupPage() {
       <div className="mx-auto max-w-3xl">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <BrandMark />
-          <Badge variant="outline" className="w-fit text-xs px-2.5 py-1">
-            System Initialization Wizard
-          </Badge>
         </div>
 
         <div className="mt-8">
-          <h1 className="text-3xl font-bold tracking-tight">Platform Setup Wizard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Setup Wizard</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Configure your initial super administrator, business details, and optional service
             integrations. All optional steps can be skipped and configured later from the Admin
@@ -429,12 +426,12 @@ function SetupPage() {
                       setStep(index);
                     }
                   }}
-                  className={`flex flex-col p-2.5 rounded-lg border text-xs transition-all cursor-pointer ${
+                  className={`text-xs transition-all cursor-pointer ${
                     isCurrent
-                      ? "border-primary bg-primary/5 text-primary font-medium shadow-xs"
+                      ? "text-primary font-medium"
                       : isDone
-                        ? "border-border/80 bg-background/50 text-foreground"
-                        : "border-border/40 bg-muted/20 text-muted-foreground opacity-75"
+                        ? "text-foreground"
+                        : "text-muted-foreground opacity-75"
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
@@ -449,9 +446,6 @@ function SetupPage() {
                       </span>
                     </div>
                   </div>
-                  <span className="text-[10px] text-muted-foreground">
-                    {item.optional ? "Optional" : "Required"}
-                  </span>
                 </li>
               );
             })}
