@@ -13,7 +13,7 @@ import {
   Camera,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { lazy, Suspense, useState, useEffect } from "react";
 import { SiteHeader } from "@/components/site-header";
@@ -36,6 +36,7 @@ import { EditableLandingText } from "@/components/editable-landing-text";
 import { AdminLandingBar, LandingViewMode } from "@/components/admin-landing-bar";
 import { useAppConfig } from "@/lib/config-context";
 import { useUrlBooleanState } from "@/lib/use-url-search-state";
+import { useRealtimeSync } from "@/hooks/use-realtime";
 
 // Staff-only components lazy-loaded: anonymous/borrower visitors — the vast
 // majority of traffic — never download this JS. Cuts initial bundle size
@@ -266,10 +267,11 @@ const authRevealVariants = {
 
 function Landing() {
   const { needsSetup } = useSetupStatus();
-  const { session, profile, isStaff, loading, token } = useAuth();
+  const { session, profile, isStaff, loading, token, refreshProfile } = useAuth();
   const { config, businessName, lockLandingEditMode, updateConfigOptimistic, notifyConfigChanged } =
     useAppConfig();
   const loaderData = Route.useLoaderData();
+  const queryClient = useQueryClient();
 
   const getProductsFn = useServerFn(listPublicLoanProducts);
   const centerFn = useServerFn(getMyLoanCenter);
@@ -279,7 +281,26 @@ function Landing() {
     queryKey: ["my-loan-center-dashboard", token],
     queryFn: () => centerFn({ headers: { authorization: `Bearer ${token}` } }),
     enabled: Boolean(token),
+    staleTime: 5000,
+    refetchOnWindowFocus: true,
   });
+
+  useRealtimeSync(
+    [
+      "LOAN_STATUS_CHANGED",
+      "PAYMENT_RECEIVED",
+      "CREDIBILITY_UPDATED",
+      "GUARANTOR_UPDATED",
+      "USER_PROFILE_UPDATED",
+    ],
+    () => {
+      void queryClient.invalidateQueries({ queryKey: ["my-loan-center-dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
+      void queryClient.invalidateQueries({ queryKey: ["public-loan-products"] });
+      void refreshProfile();
+    },
+    { intervalMs: 6000, enabled: Boolean(token) },
+  );
 
   const [contentMap, setContentMap] = useState<Record<string, string>>({});
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);

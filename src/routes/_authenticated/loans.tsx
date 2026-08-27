@@ -120,7 +120,7 @@ function LoansPage() {
   const productsQuery = useQuery({
     queryKey: ["loan-products"],
     queryFn: () => productsFn(),
-    staleTime: 30000,
+    staleTime: 5000,
     placeholderData: (prev) => prev,
     select: (data) => keysToSnakeCase(data) as KeysToSnakeCase<LoanProduct[]>,
   });
@@ -128,8 +128,8 @@ function LoansPage() {
   const centerQuery = useQuery({
     queryKey: ["loan-center"],
     queryFn: () => centerFn(),
-    staleTime: 30000,
-    placeholderData: (prev) => prev,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
     select: (data) =>
       keysToSnakeCase(data) as KeysToSnakeCase<{
         loans: any;
@@ -141,7 +141,7 @@ function LoansPage() {
   const userGuarantorsQuery = useQuery({
     queryKey: ["my-guarantors"],
     queryFn: () => userGuarantorsFn(),
-    staleTime: 30000,
+    staleTime: 10000,
     placeholderData: (prev) => prev,
     select: (data) => keysToSnakeCase(data) as KeysToSnakeCase<UserGuarantor[]>,
   });
@@ -251,16 +251,21 @@ function LoansPage() {
         },
       });
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       fireCelebrationConfetti();
+      toast.success("Loan application submitted successfully!");
       setSelectedId(null);
       setAmount("");
       setPurpose("");
       setAgreedToLoanTerms(false);
       navigate({ to: "/loans", search: (prev) => ({ ...prev, tab: undefined }) });
-      void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
-      void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
-      void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["loan-center"] }),
+        queryClient.invalidateQueries({ queryKey: ["my-loan-center-dashboard"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-loans"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-overview"] }),
+      ]);
+      await centerQuery.refetch();
       broadcastSync("LOAN_STATUS_CHANGED");
     },
     onError: (error: Error) => toast.error(error.message),
