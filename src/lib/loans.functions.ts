@@ -290,13 +290,8 @@ export const requestLoan = createServerFn({ method: "POST" })
     } = await import("./loans.server");
     const { normalizePhone } = await import("./format");
 
-    // Run background reconciliations asynchronously so loan submission returns instantly
-    void reconcileActiveLoansWithoutPayout().catch((err) =>
-      console.error("[reconcileActiveLoansWithoutPayout error]:", err),
-    );
-    void reconcileFullyPaidLoans().catch((err) =>
-      console.error("[reconcileFullyPaidLoans error]:", err),
-    );
+    await reconcileActiveLoansWithoutPayout();
+    await reconcileFullyPaidLoans();
 
     const [profile, product, openLoans, settings] = await Promise.all([
       prisma.profile.findUnique({ where: { id: userId } }),
@@ -437,19 +432,17 @@ export const requestLoan = createServerFn({ method: "POST" })
       return createdLoan;
     });
 
-    // Dispatch notifications asynchronously in background without blocking response
-    import("./notifications.server")
-      .then(({ notifyNewLoanRequested }) =>
-        notifyNewLoanRequested({
-          id: loan.id,
-          userId,
-          principal: quote.principal,
-          productName: product.name,
-        }),
-      )
-      .catch((err) => {
-        console.error("[requestLoan notification error]:", err);
+    try {
+      const { notifyNewLoanRequested } = await import("./notifications.server");
+      await notifyNewLoanRequested({
+        id: loan.id,
+        userId,
+        principal: quote.principal,
+        productName: product.name,
       });
+    } catch (err) {
+      console.error("[requestLoan notification error]:", err);
+    }
 
     return { ok: true as const, loanId: loan.id };
   });
