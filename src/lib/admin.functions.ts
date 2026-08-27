@@ -3,6 +3,10 @@ import { z } from "zod";
 import { requireCustomAuth } from "@/lib/auth-middleware";
 import { prisma } from "@/lib/prisma";
 import { sendSystemAlertToAdmins, notifyUserAccountDeleted } from "@/lib/notifications.server";
+import {
+  invalidatePublicBusinessConfigCache,
+  invalidateSetupStatusCache,
+} from "@/lib/account.functions";
 
 export const getAdminOverview = createServerFn({ method: "GET" })
   .middleware([requireCustomAuth])
@@ -1688,6 +1692,9 @@ export const adminUpdateBusinessSettings = createServerFn({ method: "POST" })
       },
     });
 
+    invalidatePublicBusinessConfigCache();
+    invalidateSetupStatusCache();
+
     return { ok: true as const };
   });
 
@@ -1711,8 +1718,8 @@ export const adminSaveLandingContent = createServerFn({ method: "POST" })
     } else {
       await prisma.businessSettings.create({
         data: {
-          businessName: process.env["BUSINESS_NAME"] || "Lending Platform",
-          businessLocation: "Nairobi, Kenya",
+          businessName: process.env["BUSINESS_NAME"] || "",
+          businessLocation: "",
           landingContent: data.landingContent,
         },
       });
@@ -1725,6 +1732,8 @@ export const adminSaveLandingContent = createServerFn({ method: "POST" })
         targetType: "business_settings",
       },
     });
+
+    invalidatePublicBusinessConfigCache();
 
     return { ok: true as const };
   });
@@ -2132,6 +2141,8 @@ export const deleteBusinessFn = createServerFn({ method: "POST" })
     }
 
     await wipeEntireDatabase();
+    invalidatePublicBusinessConfigCache();
+    invalidateSetupStatusCache();
 
     return {
       ok: true as const,

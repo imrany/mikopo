@@ -40,9 +40,8 @@ export interface AppConfig {
 }
 
 export const DEFAULT_APP_CONFIG: AppConfig = {
-  businessName:
-    (typeof process !== "undefined" && process.env?.["BUSINESS_NAME"]) || "Lending Platform",
-  businessLocation: "Nairobi, Kenya",
+  businessName: (typeof process !== "undefined" && process.env?.["BUSINESS_NAME"]) || "",
+  businessLocation: "",
   supportPhone: "",
   supportEmail: "",
   logoUrl: "",
@@ -392,8 +391,8 @@ export function AppConfigProvider({
       businessName:
         optimisticConfig.businessName ||
         (typeof process !== "undefined" && process.env?.["BUSINESS_NAME"]) ||
-        "Lending Platform",
-      businessLocation: optimisticConfig.businessLocation || "Nairobi, Kenya",
+        "",
+      businessLocation: optimisticConfig.businessLocation || "",
       supportPhone: optimisticConfig.supportPhone,
       supportEmail: optimisticConfig.supportEmail,
       logoUrl: optimisticConfig.logoUrl,

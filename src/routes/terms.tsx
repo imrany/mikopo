@@ -21,8 +21,8 @@ export const Route = createFileRoute("/terms")({
       return config;
     } catch {
       return {
-        businessName: process.env["BUSINESS_NAME"] || "Lending Platform",
-        businessLocation: "Nairobi, Kenya",
+        businessName: process.env["BUSINESS_NAME"] || "",
+        businessLocation: "",
         supportPhone: "",
         supportEmail: "",
         logoUrl: "",
@@ -32,9 +32,11 @@ export const Route = createFileRoute("/terms")({
     }
   },
   head: ({ loaderData }) => {
-    const businessName = loaderData?.businessName || "Lending Platform";
-    const title = `Terms and Conditions — ${businessName}`;
-    const description = `Terms and Conditions governing loan products, repayment rules, guarantor commitments, and financial services by ${businessName}.`;
+    const businessName = loaderData?.businessName || process.env["BUSINESS_NAME"] || "";
+    const title = businessName ? `Terms and Conditions — ${businessName}` : "Terms and Conditions";
+    const description = businessName
+      ? `Terms and Conditions governing loan products, repayment rules, guarantor commitments, and financial services by ${businessName}.`
+      : "Terms and Conditions.";
     const heroImage = (loaderData as any)?.heroImageUrl || "/hero-image.png";
 
     return {
@@ -43,10 +45,12 @@ export const Route = createFileRoute("/terms")({
         { name: "description", content: description },
         { property: "og:title", content: title },
         { property: "og:description", content: description },
-        { property: "og:site_name", content: businessName },
+        ...(businessName ? [{ property: "og:site_name", content: businessName }] : []),
         { property: "og:type", content: "website" },
         { property: "og:image", content: heroImage },
         { property: "og:image:type", content: "image/png" },
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
         { name: "twitter:card", content: "summary_large_image" },
         { name: "twitter:title", content: title },
         { name: "twitter:description", content: description },

@@ -61,8 +61,8 @@ export const Route = createFileRoute("/auth")({
       return config;
     } catch {
       return {
-        businessName: process.env["BUSINESS_NAME"] || "Lending Platform",
-        businessLocation: "Nairobi, Kenya",
+        businessName: process.env["BUSINESS_NAME"] || "",
+        businessLocation: "",
         supportPhone: "",
         supportEmail: "",
         logoUrl: "",
@@ -72,9 +72,11 @@ export const Route = createFileRoute("/auth")({
     }
   },
   head: ({ loaderData }) => {
-    const businessName = loaderData?.businessName || "Lending Platform";
-    const title = `Sign In or Register — ${businessName}`;
-    const description = `Sign in with your National ID or M-Pesa phone number, or register a borrower account with ${businessName}. Instant credit limit and mobile money payouts.`;
+    const businessName = loaderData?.businessName || process.env["BUSINESS_NAME"] || "";
+    const title = businessName ? `Sign In or Register — ${businessName}` : "Sign In or Register";
+    const description = businessName
+      ? `Sign in with your National ID or M-Pesa phone number, or register a borrower account with ${businessName}. Instant credit limit and mobile money payouts.`
+      : "Sign in or register for an account.";
     const heroImage = (loaderData as any)?.heroImageUrl || "/hero-image.png";
 
     return {
@@ -83,11 +85,11 @@ export const Route = createFileRoute("/auth")({
         { name: "description", content: description },
         {
           name: "keywords",
-          content: `sign in, register borrower account, ${businessName}, M-Pesa loans login, mobile credit Kenya`,
+          content: `sign in, register borrower account, ${businessName || "M-Pesa loans"}, mobile credit Kenya`,
         },
         { property: "og:title", content: title },
         { property: "og:description", content: description },
-        { property: "og:site_name", content: businessName },
+        ...(businessName ? [{ property: "og:site_name", content: businessName }] : []),
         { property: "og:type", content: "website" },
         { property: "og:image", content: heroImage },
         { property: "og:image:type", content: "image/png" },

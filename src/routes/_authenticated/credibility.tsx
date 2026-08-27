@@ -34,15 +34,20 @@ export const Route = createFileRoute("/_authenticated/credibility")({
     return getPublicBusinessConfig();
   },
   head: ({ loaderData }) => {
-    const businessName = loaderData?.businessName || "Lending Platform";
+    const businessName = loaderData?.businessName || process.env["BUSINESS_NAME"] || "";
+    const title = businessName
+      ? `Credibility Score & Points — ${businessName}`
+      : "Credibility Score & Points";
     return {
       meta: [
-        { title: `Credibility Score & Points — ${businessName}` },
+        { title },
         {
           name: "description",
-          content: `Track your ${businessName} credibility score, see tier progress, and learn how to boost your loan limits.`,
+          content: businessName
+            ? `Track your ${businessName} credibility score, see tier progress, and learn how to boost your loan limits.`
+            : "Track your credibility score, see tier progress, and learn how to boost your loan limits.",
         },
-        { property: "og:title", content: `Credibility Score & Points — ${businessName}` },
+        { property: "og:title", content: title },
         {
           property: "og:description",
           content: "Track your credibility score and unlock higher loan tiers.",

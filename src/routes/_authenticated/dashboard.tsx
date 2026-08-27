@@ -45,8 +45,8 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       return config;
     } catch {
       return {
-        businessName: process.env["BUSINESS_NAME"] || "Lending Platform",
-        businessLocation: "Nairobi, Kenya",
+        businessName: process.env["BUSINESS_NAME"] || "",
+        businessLocation: "",
         supportPhone: "",
         supportEmail: "",
         logoUrl: "",
@@ -56,15 +56,18 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
     }
   },
   head: ({ loaderData }) => {
-    const businessName = loaderData?.businessName || "Lending Platform";
+    const businessName = loaderData?.businessName || process.env["BUSINESS_NAME"] || "";
+    const title = businessName ? `Your Dashboard — ${businessName}` : "Your Dashboard";
     return {
       meta: [
-        { title: `Your Dashboard — ${businessName}` },
+        { title },
         {
           name: "description",
-          content: `Track your loan limit, credibility score and referral rewards on ${businessName}.`,
+          content: businessName
+            ? `Track your loan limit, credibility score and referral rewards on ${businessName}.`
+            : "Track your loan limit, credibility score and referral rewards.",
         },
-        { property: "og:title", content: `Your Dashboard — ${businessName}` },
+        { property: "og:title", content: title },
         { property: "og:description", content: "Loan limit, credibility score and referrals." },
         { property: "og:type", content: "website" },
         { name: "twitter:card", content: "summary_large_image" },

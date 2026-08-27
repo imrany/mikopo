@@ -62,15 +62,18 @@ export const Route = createFileRoute("/_authenticated/loans")({
     return getPublicBusinessConfig();
   },
   head: ({ loaderData }) => {
-    const businessName = loaderData?.businessName || "Lending Platform";
+    const businessName = loaderData?.businessName || process.env["BUSINESS_NAME"] || "";
+    const title = businessName ? `Loans & tiers — ${businessName}` : "Loans & tiers";
     return {
       meta: [
-        { title: `Loans & tiers — ${businessName}` },
+        { title },
         {
           name: "description",
-          content: `Compare ${businessName} loan tiers, request a loan with guarantors and repay instantly over M-Pesa.`,
+          content: businessName
+            ? `Compare ${businessName} loan tiers, request a loan with guarantors and repay instantly over M-Pesa.`
+            : "Compare loan tiers, request a loan with guarantors and repay instantly over M-Pesa.",
         },
-        { property: "og:title", content: `Loans & tiers — ${businessName}` },
+        { property: "og:title", content: title },
         { property: "og:description", content: "Loan tiers, guarantors and M-Pesa repayment." },
         { property: "og:type", content: "website" },
         { name: "twitter:card", content: "summary_large_image" },

@@ -116,10 +116,13 @@ export const Route = createFileRoute("/_authenticated/account")({
     return getPublicBusinessConfig();
   },
   head: ({ loaderData }) => {
-    const businessName = loaderData?.businessName || "Lending Platform";
+    const businessName = loaderData?.businessName || process.env["BUSINESS_NAME"] || "";
+    const title = businessName
+      ? `Account & Security Settings — ${businessName}`
+      : "Account & Security Settings";
     return {
       meta: [
-        { title: `Account & Security Settings — ${businessName}` },
+        { title },
         {
           name: "description",
           content:

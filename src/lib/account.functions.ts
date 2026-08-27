@@ -11,11 +11,25 @@ import {
 import { requireCustomAuth } from "./auth-middleware";
 import { prisma } from "./prisma";
 
+let cachedSetupStatus: { needsSetup: boolean; locked: boolean; timestamp: number } | null = null;
+const SETUP_STATUS_TTL_MS = 15_000;
+
+export function invalidateSetupStatusCache() {
+  cachedSetupStatus = null;
+}
+
 export const getSetupStatus = createServerFn({ method: "GET" }).handler(async () => {
+  const now = Date.now();
+  if (cachedSetupStatus && now - cachedSetupStatus.timestamp < SETUP_STATUS_TTL_MS) {
+    return { needsSetup: cachedSetupStatus.needsSetup, locked: cachedSetupStatus.locked };
+  }
+
   try {
     const { adminExists, setupCompleted } = await import("./account.server");
     const [hasAdmin, completed] = await Promise.all([adminExists(), setupCompleted()]);
-    return { needsSetup: !hasAdmin || !completed, locked: hasAdmin && completed };
+    const res = { needsSetup: !hasAdmin || !completed, locked: hasAdmin && completed };
+    cachedSetupStatus = { ...res, timestamp: now };
+    return res;
   } catch (err) {
     console.error("[getSetupStatus error]:", err);
     return { needsSetup: true, locked: false };
@@ -38,6 +52,8 @@ export const completeSetup = createServerFn({ method: "POST" })
         return { ok: false as const, error: "Setup has already been completed for this business." };
       }
       await createFirstAdmin(data);
+      invalidateSetupStatusCache();
+      invalidatePublicBusinessConfigCache();
       return { ok: true as const };
     } catch (err) {
       console.error("[completeSetup error]:", err);
@@ -412,12 +428,24 @@ export const decidePhoneChangeRequest = createServerFn({ method: "POST" })
 
 import { DEFAULT_TERMS_MARKDOWN, DEFAULT_PRIVACY_MARKDOWN } from "./default-policies";
 
+let cachedPublicConfig: { data: any; timestamp: number } | null = null;
+const PUBLIC_CONFIG_TTL_MS = 15_000;
+
+export function invalidatePublicBusinessConfigCache() {
+  cachedPublicConfig = null;
+}
+
 export const getPublicBusinessConfig = createServerFn({ method: "GET" }).handler(async () => {
+  const now = Date.now();
+  if (cachedPublicConfig && now - cachedPublicConfig.timestamp < PUBLIC_CONFIG_TTL_MS) {
+    return cachedPublicConfig.data;
+  }
+
   try {
     const settings = await prisma.businessSettings.findFirst();
-    return {
-      businessName: settings?.businessName || process.env["BUSINESS_NAME"] || "Lending Platform",
-      businessLocation: settings?.businessLocation || "Nairobi, Kenya",
+    const result = {
+      businessName: settings?.businessName || process.env["BUSINESS_NAME"] || "",
+      businessLocation: settings?.businessLocation || "",
       supportPhone: settings?.supportPhone || "",
       supportEmail: settings?.supportEmail || "",
       logoUrl: settings?.logoUrl || "",
@@ -441,11 +469,13 @@ export const getPublicBusinessConfig = createServerFn({ method: "GET" }).handler
       autoRejectIfDefaulted: settings?.autoRejectIfDefaulted ?? true,
       lockLandingEditMode: Boolean(settings?.lockLandingEditMode),
     };
+    cachedPublicConfig = { data: result, timestamp: now };
+    return result;
   } catch (err) {
     console.error("[getPublicBusinessConfig error]:", err);
     return {
-      businessName: process.env["BUSINESS_NAME"] || "Lending Platform",
-      businessLocation: "Nairobi, Kenya",
+      businessName: process.env["BUSINESS_NAME"] || "",
+      businessLocation: "",
       supportPhone: "",
       supportEmail: "",
       logoUrl: "",

@@ -30,7 +30,7 @@ export function AdminNav({ onRefresh }: AdminNavProps) {
     enabled: isStaff,
   });
 
-  const businessName = data?.settings?.business_name || "Lending Platform";
+  const businessName = data?.settings?.business_name || "";
   const navItems = [
     {
       to: "/admin",

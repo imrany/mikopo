@@ -28,15 +28,18 @@ export const Route = createFileRoute("/_authenticated/referrals")({
     return getPublicBusinessConfig();
   },
   head: ({ loaderData }) => {
-    const businessName = loaderData?.businessName || "Lending Platform";
+    const businessName = loaderData?.businessName || process.env["BUSINESS_NAME"] || "";
+    const title = businessName ? `Referrals & Rewards — ${businessName}` : "Referrals & Rewards";
     return {
       meta: [
-        { title: `Referrals & Rewards — ${businessName}` },
+        { title },
         {
           name: "description",
-          content: `Invite friends to ${businessName}, earn credibility points, and unlock higher loan limits.`,
+          content: businessName
+            ? `Invite friends to ${businessName}, earn credibility points, and unlock higher loan limits.`
+            : "Invite friends, earn credibility points, and unlock higher loan limits.",
         },
-        { property: "og:title", content: `Referrals & Rewards — ${businessName}` },
+        { property: "og:title", content: title },
         {
           property: "og:description",
           content: "Get your unique referral code and earn credibility points.",

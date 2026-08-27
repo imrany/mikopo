@@ -8,6 +8,7 @@ import {
   useNavigate,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { Coins, LucideLoader } from "lucide-react";
 import { useAppHistoryTracker } from "@/hooks/use-app-history-tracker";
 import { popPath } from "@/lib/app-history";
 
@@ -102,8 +103,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         }
       }
       return {
-        businessName: process.env["BUSINESS_NAME"] || "Lending Platform",
-        businessLocation: "Nairobi, Kenya",
+        businessName: process.env["BUSINESS_NAME"] || "",
+        businessLocation: "",
         supportPhone: "",
         supportEmail: "",
         logoUrl: "",
@@ -113,18 +114,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     }
   },
   head: ({ loaderData }) => {
-    const businessName =
-      loaderData?.businessName || process.env["BUSINESS_NAME"] || "Lending Platform";
-    const location = loaderData?.businessLocation || "Nairobi, Kenya";
-    const description = `${businessName} — Fast, secure M-Pesa loan management, instant disbursements, credibility-based limits, and guarantor-backed loans in ${location}.`;
-    const title = `${businessName} — Instant M-Pesa Loans & Microfinance`;
+    const businessName = loaderData?.businessName || process.env["BUSINESS_NAME"] || "";
+    const location = loaderData?.businessLocation || "";
+    const title = businessName ? `${businessName} — Instant M-Pesa Loans & Microfinance` : "";
+    const description = businessName
+      ? `${businessName} — Fast, secure M-Pesa loan management, instant disbursements, credibility-based limits, and guarantor-backed loans${location ? ` in ${location}` : ""}.`
+      : "";
 
     return {
       meta: [
         { charSet: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-        { title },
-        { name: "description", content: description },
+        ...(title ? [{ title }] : [{ title: "" }]),
+        ...(description ? [{ name: "description", content: description }] : []),
         {
           name: "keywords",
           content:
@@ -134,9 +136,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           name: "robots",
           content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
         },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
-        { property: "og:site_name", content: businessName },
+        ...(title ? [{ property: "og:title", content: title }] : []),
+        ...(description ? [{ property: "og:description", content: description }] : []),
+        ...(businessName ? [{ property: "og:site_name", content: businessName }] : []),
         { property: "og:type", content: "website" },
         { property: "og:locale", content: "en_KE" },
         { property: "og:image", content: "/hero-image.png" },
@@ -144,20 +146,31 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { property: "og:image:type", content: "image/png" },
         { property: "og:image:width", content: "1200" },
         { property: "og:image:height", content: "630" },
-        { property: "og:image:alt", content: `${businessName} Instant M-Pesa Microloans Platform` },
+        ...(businessName
+          ? [
+              {
+                property: "og:image:alt",
+                content: `${businessName} Instant M-Pesa Microloans Platform`,
+              },
+            ]
+          : []),
         { name: "twitter:card", content: "summary_large_image" },
-        { name: "twitter:title", content: title },
-        { name: "twitter:description", content: description },
+        ...(title ? [{ name: "twitter:title", content: title }] : []),
+        ...(description ? [{ name: "twitter:description", content: description }] : []),
         { name: "twitter:image", content: "/hero-image.png" },
-        {
-          name: "twitter:image:alt",
-          content: `${businessName} Instant M-Pesa Microloans Platform`,
-        },
+        ...(businessName
+          ? [
+              {
+                name: "twitter:image:alt",
+                content: `${businessName} Instant M-Pesa Microloans Platform`,
+              },
+            ]
+          : []),
         { name: "theme-color", content: "#0b0f19" },
         { name: "apple-mobile-web-app-capable", content: "yes" },
         { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-        { name: "apple-mobile-web-app-title", content: businessName },
-        { name: "application-name", content: businessName },
+        ...(businessName ? [{ name: "apple-mobile-web-app-title", content: businessName }] : []),
+        ...(businessName ? [{ name: "application-name", content: businessName }] : []),
         { name: "format-detection", content: "telephone=no" },
       ],
       links: [
@@ -179,9 +192,29 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   },
   shellComponent: RootShell,
   component: RootComponent,
+  pendingComponent: RootPendingComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
+
+function RootPendingComponent() {
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-3">
+        <div className="relative flex size-12 items-center justify-center">
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary/20 opacity-75" />
+          <span className="relative inline-flex size-10 items-center justify-center rounded-xl bg-gradient-brand shadow-sm">
+            <Coins className="size-5 text-primary-foreground animate-pulse" />
+          </span>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+          <LucideLoader className="size-3.5 animate-spin text-primary" />
+          <span>Loading...</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function RootShell({ children }: { children: ReactNode }) {
   return (

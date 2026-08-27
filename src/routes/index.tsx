@@ -68,8 +68,8 @@ export const Route = createFileRoute("/")({
       return { ...config, products };
     } catch {
       return {
-        businessName: process.env["BUSINESS_NAME"] || "Lending Platform",
-        businessLocation: "Nairobi, Kenya",
+        businessName: process.env["BUSINESS_NAME"] || "",
+        businessLocation: "",
         supportPhone: "",
         supportEmail: "",
         logoUrl: "",
@@ -80,100 +80,114 @@ export const Route = createFileRoute("/")({
     }
   },
   head: ({ loaderData }) => {
-    const businessName = loaderData?.businessName || "Lending Platform";
-    const location = loaderData?.businessLocation || "Nairobi, Kenya";
-    const title = `${businessName} — Instant M-Pesa Micro-Loans & Peer Guarantor Credit`;
-    const description = `Apply for instant M-Pesa loan approvals with ${businessName} in ${location}. Credibility-based credit limits, digital guarantor backing, and automated STK Push repayments.`;
+    const businessName = loaderData?.businessName || process.env["BUSINESS_NAME"] || "";
+    const location = loaderData?.businessLocation || "";
+    const title = businessName
+      ? `${businessName} — Instant M-Pesa Micro-Loans & Peer Guarantor Credit`
+      : "";
+    const description = businessName
+      ? `Apply for instant M-Pesa loan approvals with ${businessName}${location ? ` in ${location}` : ""}. Credibility-based credit limits, digital guarantor backing, and automated STK Push repayments.`
+      : "";
     const heroImage = loaderData?.heroImageUrl || "/hero-image.png";
 
-    const jsonLd = {
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": ["FinancialService", "LoanOrCredit"],
-          "@id":
-            "https://ais-pre-yucgftzwvw73wtc4g4wdi4-464215410896.europe-west1.run.app/#financial-service",
-          name: businessName,
-          legalName: businessName,
-          description,
-          url: "https://ais-pre-yucgftzwvw73wtc4g4wdi4-464215410896.europe-west1.run.app",
-          logo: {
-            "@type": "ImageObject",
-            url: "https://ais-pre-yucgftzwvw73wtc4g4wdi4-464215410896.europe-west1.run.app/pwa-icon.png",
-            width: 512,
-            height: 512,
-          },
-          image: {
-            "@type": "ImageObject",
-            url: "https://ais-pre-yucgftzwvw73wtc4g4wdi4-464215410896.europe-west1.run.app/hero-image.png",
-            width: 1200,
-            height: 630,
-          },
-          address: {
-            "@type": "PostalAddress",
-            addressLocality: location,
-            addressCountry: "KE",
-          },
-          telephone: loaderData?.supportPhone || undefined,
-          email: loaderData?.supportEmail || undefined,
-          currenciesAccepted: "KES",
-          paymentAccepted: ["M-Pesa", "Mobile Money"],
-          priceRange: "KES 500 - KES 100,000",
-          areaServed: {
-            "@type": "Country",
-            name: "Kenya",
-          },
-          potentialAction: {
-            "@type": "Action",
-            name: "Apply for M-Pesa Micro-Loan",
-            target:
-              "https://ais-pre-yucgftzwvw73wtc4g4wdi4-464215410896.europe-west1.run.app/auth?mode=register",
-          },
-        },
-        {
-          "@type": "WebSite",
-          "@id":
-            "https://ais-pre-yucgftzwvw73wtc4g4wdi4-464215410896.europe-west1.run.app/#website",
-          url: "https://ais-pre-yucgftzwvw73wtc4g4wdi4-464215410896.europe-west1.run.app",
-          name: businessName,
-          description,
-          inLanguage: "en-KE",
-        },
-      ],
-    };
+    const jsonLd = businessName
+      ? {
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": ["FinancialService", "LoanOrCredit"],
+              "@id":
+                "https://ais-pre-yucgftzwvw73wtc4g4wdi4-464215410896.europe-west1.run.app/#financial-service",
+              name: businessName,
+              legalName: businessName,
+              description,
+              url: "https://ais-pre-yucgftzwvw73wtc4g4wdi4-464215410896.europe-west1.run.app",
+              logo: {
+                "@type": "ImageObject",
+                url: "https://ais-pre-yucgftzwvw73wtc4g4wdi4-464215410896.europe-west1.run.app/pwa-icon.png",
+                width: 512,
+                height: 512,
+              },
+              image: {
+                "@type": "ImageObject",
+                url: "https://ais-pre-yucgftzwvw73wtc4g4wdi4-464215410896.europe-west1.run.app/hero-image.png",
+                width: 1200,
+                height: 630,
+              },
+              address: {
+                "@type": "PostalAddress",
+                addressLocality: location || "Nairobi",
+                addressCountry: "KE",
+              },
+              telephone: loaderData?.supportPhone || undefined,
+              email: loaderData?.supportEmail || undefined,
+              currenciesAccepted: "KES",
+              paymentAccepted: ["M-Pesa", "Mobile Money"],
+              priceRange: "KES 500 - KES 100,000",
+              areaServed: {
+                "@type": "Country",
+                name: "Kenya",
+              },
+              potentialAction: {
+                "@type": "Action",
+                name: "Apply for M-Pesa Micro-Loan",
+                target:
+                  "https://ais-pre-yucgftzwvw73wtc4g4wdi4-464215410896.europe-west1.run.app/auth?mode=register",
+              },
+            },
+            {
+              "@type": "WebSite",
+              "@id":
+                "https://ais-pre-yucgftzwvw73wtc4g4wdi4-464215410896.europe-west1.run.app/#website",
+              url: "https://ais-pre-yucgftzwvw73wtc4g4wdi4-464215410896.europe-west1.run.app",
+              name: businessName,
+              description,
+              inLanguage: "en-KE",
+            },
+          ],
+        }
+      : null;
 
     return {
       meta: [
-        { title },
-        { name: "description", content: description },
+        ...(title ? [{ title }] : [{ title: "" }]),
+        ...(description ? [{ name: "description", content: description }] : []),
         {
           name: "keywords",
           content:
             "M-Pesa loans, online microloans Kenya, fast mobile loans, guarantor microfinance, Daraja STK Push, Nairobi instant credit, peer credit score",
         },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
+        ...(title ? [{ property: "og:title", content: title }] : []),
+        ...(description ? [{ property: "og:description", content: description }] : []),
         { property: "og:type", content: "website" },
-        { property: "og:site_name", content: businessName },
+        ...(businessName ? [{ property: "og:site_name", content: businessName }] : []),
         { property: "og:locale", content: "en_KE" },
         { property: "og:image", content: heroImage },
         { property: "og:image:secure_url", content: heroImage },
         { property: "og:image:type", content: "image/png" },
         { property: "og:image:width", content: "1200" },
         { property: "og:image:height", content: "630" },
-        { property: "og:image:alt", content: `${businessName} M-Pesa Lending Platform` },
+        ...(businessName
+          ? [{ property: "og:image:alt", content: `${businessName} Microloans` }]
+          : []),
         { name: "twitter:card", content: "summary_large_image" },
-        { name: "twitter:title", content: title },
-        { name: "twitter:description", content: description },
+        ...(title ? [{ name: "twitter:title", content: title }] : []),
+        ...(description ? [{ name: "twitter:description", content: description }] : []),
         { name: "twitter:image", content: heroImage },
-        { name: "twitter:image:alt", content: `${businessName} M-Pesa Lending Platform` },
+        ...(businessName
+          ? [{ name: "twitter:image:alt", content: `${businessName} Microloans` }]
+          : []),
       ],
-      scripts: [
-        {
-          type: "application/ld+json",
-          children: JSON.stringify(jsonLd),
-        },
-      ],
+      ...(jsonLd
+        ? {
+            scripts: [
+              {
+                type: "application/ld+json",
+                children: JSON.stringify(jsonLd),
+              },
+            ],
+          }
+        : {}),
     };
   },
   component: Landing,
