@@ -122,6 +122,8 @@ function AdminLoanDetailPage() {
       void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
       void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
       void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-loan-center-dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-repayments"] });
       broadcastSync("LOAN_STATUS_CHANGED");
     },
     onError: (err: Error) => toast.error(err.message),
@@ -136,6 +138,8 @@ function AdminLoanDetailPage() {
       void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
       void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
       void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-loan-center-dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-repayments"] });
       broadcastSync("LOAN_STATUS_CHANGED");
     },
     onError: (err: Error) => toast.error(err.message),
@@ -151,6 +155,8 @@ function AdminLoanDetailPage() {
       void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
       void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
       void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-loan-center-dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-repayments"] });
       broadcastSync("LOAN_STATUS_CHANGED");
     },
     onError: (err: Error) => toast.error(err.message),
@@ -163,6 +169,8 @@ function AdminLoanDetailPage() {
       void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
       void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
       void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-loan-center-dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-repayments"] });
       broadcastSync("LOAN_STATUS_CHANGED");
     },
     onError: (err: Error) => {
@@ -190,6 +198,8 @@ function AdminLoanDetailPage() {
       void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
       void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
       void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-loan-center-dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-guarantors"] });
       broadcastSync("GUARANTOR_UPDATED");
       broadcastSync("LOAN_STATUS_CHANGED");
     },

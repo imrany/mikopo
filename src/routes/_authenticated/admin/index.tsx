@@ -164,6 +164,8 @@ function AdminOverviewPage() {
       void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
       void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
       void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-loan-center-dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-repayments"] });
       broadcastSync("LOAN_STATUS_CHANGED");
     },
     onError: (error: Error) => toast.error(error.message),
@@ -176,6 +178,8 @@ function AdminOverviewPage() {
       void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
       void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
       void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-loan-center-dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-repayments"] });
       broadcastSync("LOAN_STATUS_CHANGED");
     },
     onError: (error: Error) => toast.error(error.message),
