@@ -86,7 +86,7 @@ function tierFor(score: number) {
 }
 
 function Dashboard() {
-  const { profile, canAccessUserFeatures, isStaff, refresh: refreshProfile } = useAuth();
+  const { profile, canAccessUserFeatures, isStaff, refresh: refreshProfile, token } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const centerFn = useServerFn(getMyLoanCenter);
@@ -99,8 +99,9 @@ function Dashboard() {
 
   const { data: loanCenterData, isLoading: isLoadingLoanCenter } = useQuery({
     queryKey: ["loan-center"],
-    queryFn: () => centerFn(),
-    staleTime: 5000,
+    queryFn: () => centerFn({ headers: token ? { authorization: `Bearer ${token}` } : undefined }),
+    staleTime: 0,
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
   });
 
@@ -114,10 +115,11 @@ function Dashboard() {
     ],
     () => {
       void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-loan-center-dashboard"] });
       void queryClient.invalidateQueries({ queryKey: ["loan-timeline"] });
       void refreshProfile();
     },
-    { intervalMs: 6000 },
+    { intervalMs: 4000 },
   );
 
   // Define the active, operational pipeline statuses that block a new loan

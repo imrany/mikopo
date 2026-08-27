@@ -278,10 +278,11 @@ function Landing() {
   const saveLandingContentFn = useServerFn(adminSaveLandingContent);
 
   const { data: loanCenterData } = useQuery({
-    queryKey: ["my-loan-center-dashboard", token],
-    queryFn: () => centerFn({ headers: { authorization: `Bearer ${token}` } }),
+    queryKey: ["loan-center"],
+    queryFn: () => centerFn({ headers: token ? { authorization: `Bearer ${token}` } : undefined }),
     enabled: Boolean(token),
-    staleTime: 5000,
+    staleTime: 0,
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
   });
 
@@ -294,12 +295,12 @@ function Landing() {
       "USER_PROFILE_UPDATED",
     ],
     () => {
-      void queryClient.invalidateQueries({ queryKey: ["my-loan-center-dashboard"] });
       void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
+      void queryClient.invalidateQueries({ queryKey: ["my-loan-center-dashboard"] });
       void queryClient.invalidateQueries({ queryKey: ["public-loan-products"] });
       void refreshProfile();
     },
-    { intervalMs: 6000, enabled: Boolean(token) },
+    { intervalMs: 4000, enabled: Boolean(token) },
   );
 
   const [contentMap, setContentMap] = useState<Record<string, string>>({});
@@ -876,14 +877,6 @@ function Landing() {
                             100,
                             Math.max(15, (Number(tier.max_amount) / maxTierAmount) * 100),
                           );
-
-                          const hasPenalty =
-                            (tier.custom_penalty_amount !== null &&
-                              tier.custom_penalty_amount !== undefined &&
-                              Number(tier.custom_penalty_amount) > 0) ||
-                            (tier.penalty_rate !== null &&
-                              tier.penalty_rate !== undefined &&
-                              Number(tier.penalty_rate) > 0);
 
                           return (
                             <motion.div

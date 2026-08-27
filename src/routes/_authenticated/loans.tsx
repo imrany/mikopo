@@ -104,7 +104,14 @@ const OPEN_STATUSES = [
 ];
 
 function LoansPage() {
-  const { profile, canAccessUserFeatures, isStaff, session } = useAuth();
+  const {
+    profile,
+    canAccessUserFeatures,
+    isStaff,
+    session,
+    token,
+    refresh: refreshProfile,
+  } = useAuth();
   const queryClient = useQueryClient();
   const productsFn = useServerFn(listLoanProducts);
   const centerFn = useServerFn(getMyLoanCenter);
@@ -127,8 +134,9 @@ function LoansPage() {
 
   const centerQuery = useQuery({
     queryKey: ["loan-center"],
-    queryFn: () => centerFn(),
+    queryFn: () => centerFn({ headers: token ? { authorization: `Bearer ${token}` } : undefined }),
     staleTime: 0,
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
     select: (data) =>
       keysToSnakeCase(data) as KeysToSnakeCase<{
@@ -262,10 +270,14 @@ function LoansPage() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["loan-center"] }),
         queryClient.invalidateQueries({ queryKey: ["my-loan-center-dashboard"] }),
+        queryClient.invalidateQueries({ queryKey: ["loan-products"] }),
+        queryClient.invalidateQueries({ queryKey: ["public-loan-products"] }),
+        queryClient.invalidateQueries({ queryKey: ["my-guarantors"] }),
+        queryClient.invalidateQueries({ queryKey: ["loan-timeline"] }),
         queryClient.invalidateQueries({ queryKey: ["admin-loans"] }),
         queryClient.invalidateQueries({ queryKey: ["admin-overview"] }),
       ]);
-      await centerQuery.refetch();
+      await Promise.all([centerQuery.refetch(), refreshProfile()]);
       broadcastSync("LOAN_STATUS_CHANGED");
     },
     onError: (error: Error) => toast.error(error.message),
