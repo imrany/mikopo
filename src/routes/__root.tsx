@@ -7,8 +7,8 @@ import {
   Scripts,
   useNavigate,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
-import { Coins, LucideLoader } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { Coins } from "lucide-react";
 import { useAppHistoryTracker } from "@/hooks/use-app-history-tracker";
 import { popPath } from "@/lib/app-history";
 
@@ -181,11 +181,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           rel: "stylesheet",
           href: "https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap",
         },
+        { rel: "icon", href: "/favicon.ico", sizes: "any" },
         { rel: "icon", href: "/favicon.png", sizes: "32x32", type: "image/png" },
         { rel: "icon", href: "/pwa-icon-192.png", sizes: "192x192", type: "image/png" },
         { rel: "icon", href: "/pwa-icon.png", sizes: "512x512", type: "image/png" },
         { rel: "apple-touch-icon", href: "/pwa-icon.png", sizes: "180x180" },
-        { rel: "shortcut icon", href: "/favicon.png", type: "image/png" },
+        { rel: "shortcut icon", href: "/favicon.ico" },
         { rel: "manifest", href: "/manifest.json" },
       ],
     };
@@ -198,18 +199,56 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootPendingComponent() {
+  const [progress, setProgress] = useState(15);
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setProgress(35), 70);
+    const t2 = setTimeout(() => setProgress(58), 200);
+    const t3 = setTimeout(() => setProgress(78), 450);
+    const t4 = setTimeout(() => setProgress(89), 850);
+
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 96) return prev;
+        const diff = (96 - prev) * 0.12;
+        return Math.min(96, Math.round((prev + Math.max(0.4, diff)) * 10) / 10);
+      });
+    }, 220);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+      clearInterval(interval);
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-3">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background px-6">
+      <div className="w-full max-w-xs sm:max-w-sm flex flex-col items-center gap-4">
         <div className="relative flex size-12 items-center justify-center">
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary/20 opacity-75" />
-          <span className="relative inline-flex size-10 items-center justify-center rounded-xl bg-gradient-brand shadow-sm">
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary/15 opacity-75 duration-1000" />
+          <span className="relative inline-flex size-11 items-center justify-center rounded-2xl bg-gradient-brand shadow-md">
             <Coins className="size-5 text-primary-foreground animate-pulse" />
           </span>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
-          <LucideLoader className="size-3.5 animate-spin text-primary" />
-          <span>Loading...</span>
+
+        <div className="w-full space-y-2">
+          <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted/80 border border-border/40">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-300 ease-out relative overflow-hidden"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between text-[11px] font-medium text-muted-foreground tabular-nums">
+            <span className="flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-primary animate-ping inline-block" />
+              <span>Loading...</span>
+            </span>
+            <span>{Math.round(progress)}%</span>
+          </div>
         </div>
       </div>
     </div>
