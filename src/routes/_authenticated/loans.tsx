@@ -245,6 +245,75 @@ function LoansPage() {
   }, [loans, activeLoan, repayLoanId]);
 
   const requestMutation = useMutation({
+    onMutate: async () => {
+      if (!selected) return;
+      await queryClient.cancelQueries({ queryKey: ["loan-center"] });
+      const previousCenterData = queryClient.getQueryData(["loan-center"]);
+
+      const numAmount = Number(amount);
+      const interestRate = Number(selected.interest_rate || 0.1);
+      const processingFeeRate = Number(selected.processing_fee_rate || 0.02);
+      const interestAmount = Math.round(numAmount * interestRate);
+      const processingFee = Math.round(numAmount * processingFeeRate);
+      const totalDue = numAmount + interestAmount + processingFee;
+      const initialStatus =
+        (selected.guarantors_required || 0) > 0 ? "pending_guarantors" : "pending_approval";
+
+      const optimisticLoan = {
+        id: `temp-${Date.now()}`,
+        user_id: profile?.id || "",
+        product_id: selected.id,
+        principal: numAmount,
+        interest_amount: interestAmount,
+        processing_fee: processingFee,
+        penalty_amount: 0,
+        penalty_count: 0,
+        last_penalty_applied_at: null,
+        total_due: totalDue,
+        amount_repaid: 0,
+        status: initialStatus,
+        purpose,
+        disbursement_phone: phone,
+        guarantors_required: selected.guarantors_required || 0,
+        due_date: new Date(Date.now() + (selected.term_days || 14) * 86400000).toISOString(),
+        approved_at: null,
+        repaid_at: null,
+        created_at: new Date().toISOString(),
+        loan_products: {
+          name: selected.name,
+          term_days: selected.term_days,
+          penalty_rate: selected.penalty_rate ?? 0.25,
+          custom_penalty_amount: selected.custom_penalty_amount ?? null,
+        },
+        loan_guarantors: [],
+      };
+
+      queryClient.setQueryData(["loan-center"], (old: any) => {
+        if (!old) {
+          return {
+            is_sandbox: false,
+            is_frozen: false,
+            frozen_reason: null,
+            has_defaulted_loan: false,
+            is_admin_frozen: false,
+            loans: [optimisticLoan],
+            guaranteeing: [],
+          };
+        }
+        return {
+          ...old,
+          loans: [optimisticLoan, ...(old.loans || [])],
+        };
+      });
+
+      setSelectedId(null);
+      setAmount("");
+      setPurpose("");
+      setAgreedToLoanTerms(false);
+      navigate({ to: "/loans", search: (prev) => ({ ...prev, tab: undefined }) });
+
+      return { previousCenterData };
+    },
     mutationFn: async () => {
       if (!selected) throw new Error("Choose a loan tier first.");
       if (!agreedToLoanTerms)
@@ -262,11 +331,15 @@ function LoansPage() {
     onSuccess: async () => {
       fireCelebrationConfetti();
       toast.success("Loan application submitted successfully!");
-      setSelectedId(null);
-      setAmount("");
-      setPurpose("");
-      setAgreedToLoanTerms(false);
-      navigate({ to: "/loans", search: (prev) => ({ ...prev, tab: undefined }) });
+      broadcastSync("LOAN_STATUS_CHANGED");
+    },
+    onError: (error: Error, _variables, context) => {
+      if (context?.previousCenterData) {
+        queryClient.setQueryData(["loan-center"], context.previousCenterData);
+      }
+      toast.error(error.message);
+    },
+    onSettled: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["loan-center"] }),
         queryClient.invalidateQueries({ queryKey: ["my-loan-center-dashboard"] }),
@@ -280,7 +353,6 @@ function LoansPage() {
       await Promise.all([centerQuery.refetch(), refreshProfile()]);
       broadcastSync("LOAN_STATUS_CHANGED");
     },
-    onError: (error: Error) => toast.error(error.message),
   });
 
   const respondMutation = useMutation({
