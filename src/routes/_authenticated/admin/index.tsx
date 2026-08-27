@@ -3,16 +3,13 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  AlertTriangle,
   Building2,
-  Check,
   FileSpreadsheet,
   LucideLoader,
   Send,
   Smartphone,
   UserX,
   Users,
-  X,
 } from "lucide-react";
 import { getExportDataset } from "@/lib/export.functions";
 import { downloadExcelFromData } from "@/lib/excel-export";
@@ -28,16 +25,6 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
   Table,
   TableBody,
   TableCell,
@@ -48,7 +35,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { useAppConfig } from "@/lib/config-context";
 import { getAdminOverview } from "@/lib/admin.functions";
-import { decideLoan, disburseLoan, listAdminLoans } from "@/lib/loans.functions";
+import { disburseLoan, listAdminLoans } from "@/lib/loans.functions";
 import { formatKes } from "@/lib/format";
 
 const adminSearchSchema = z
@@ -82,12 +69,10 @@ function AdminOverviewPage() {
   const navigate = useNavigate();
   const overviewFn = useServerFn(getAdminOverview);
   const loansFn = useServerFn(listAdminLoans);
-  const decideFn = useServerFn(decideLoan);
   const disburseFn = useServerFn(disburseLoan);
   const getExportFn = useServerFn(getExportDataset);
   const queryClient = useQueryClient();
   const { businessName } = useAppConfig();
-  const [rejectLoanId, setRejectLoanId] = useState<string | null>(null);
   const [isExportingLoans, setIsExportingLoans] = useState(false);
 
   const handleQuickExportLoans = async () => {
@@ -156,20 +141,6 @@ function AdminOverviewPage() {
     },
     { intervalMs: 6000, enabled: isStaff },
   );
-
-  const decideMutation = useMutation({
-    mutationFn: (input: { loanId: string; approve: boolean }) => decideFn({ data: input }),
-    onSuccess: (_res, input) => {
-      toast.success(input.approve ? "Loan approved" : "Loan rejected");
-      void queryClient.invalidateQueries({ queryKey: ["admin-loans"] });
-      void queryClient.invalidateQueries({ queryKey: ["admin-overview"] });
-      void queryClient.invalidateQueries({ queryKey: ["loan-center"] });
-      void queryClient.invalidateQueries({ queryKey: ["my-loan-center-dashboard"] });
-      void queryClient.invalidateQueries({ queryKey: ["my-repayments"] });
-      broadcastSync("LOAN_STATUS_CHANGED");
-    },
-    onError: (error: Error) => toast.error(error.message),
-  });
 
   const disburseMutation = useMutation({
     mutationFn: (loanId: string) => disburseFn({ data: { loanId } }),
@@ -375,48 +346,6 @@ function AdminOverviewPage() {
                                     Open complete loan review, guarantor status, and payout controls
                                   </TooltipContent>
                                 </Tooltip>
-                                {loan.status === "pending_approval" && (
-                                  <>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          size="sm"
-                                          className="h-7 text-xs"
-                                          disabled={decideMutation.isPending}
-                                          onClick={() =>
-                                            decideMutation.mutate({
-                                              loanId: loan.id,
-                                              approve: true,
-                                            })
-                                          }
-                                        >
-                                          <Check className="size-3.5 mr-1" /> Approve
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent side="top">
-                                        Approve this loan application so it moves to approved state
-                                        for disbursement
-                                      </TooltipContent>
-                                    </Tooltip>
-
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          className="h-7 text-xs text-destructive"
-                                          disabled={decideMutation.isPending}
-                                          onClick={() => setRejectLoanId(loan.id)}
-                                        >
-                                          <X className="size-3.5 mr-1" /> Reject
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent side="top">
-                                        Reject this loan application and notify the borrower
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </>
-                                )}
                                 {loan.status === "approved" &&
                                   !loan.is_daraja_configured &&
                                   currentProfile?.id !== loan.borrower.id && (
@@ -518,41 +447,6 @@ function AdminOverviewPage() {
           </div>
         )}
       </main>
-
-      <AlertDialog
-        open={Boolean(rejectLoanId)}
-        onOpenChange={(open) => !open && setRejectLoanId(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-              <AlertTriangle className="size-5" /> Confirm Loan Request Rejection
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to reject this loan request? The applicant will be notified
-              immediately.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={decideMutation.isPending}
-              onClick={() => {
-                if (rejectLoanId) {
-                  decideMutation.mutate({ loanId: rejectLoanId, approve: false });
-                  setRejectLoanId(null);
-                }
-              }}
-            >
-              {decideMutation.isPending ? (
-                <LucideLoader className="size-4 animate-spin mr-1" />
-              ) : null}
-              Confirm Rejection
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
