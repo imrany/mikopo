@@ -1,5 +1,5 @@
-[![Docker Image](https://img.shields.io/badge/docker-ghcr.io%2Fimrany%2Fmikopo-blue?logo=docker)](https://github.com/imrany/Mikopo/pkgs/container/mikopo)
-[![GitHub Repository](https://img.shields.io/badge/github-imrany%2FMikopo-black?logo=github)](https://github.com/imrany/Mikopo)
+[![Docker Image](https://img.shields.io/badge/docker-ghcr.io%2Fimrany%2Fmikopo-blue?logo=docker)](https://github.com/imrany/mikopo/pkgs/container/mikopo)
+[![GitHub Repository](https://img.shields.io/badge/github-imrany%2Fmikopo-black?logo=github)](https://github.com/imrany/mikopo)
 [![Database](https://img.shields.io/badge/database-PostgreSQL%2016-blue?logo=postgresql)](https://www.postgresql.org/)
 [![Payment](https://img.shields.io/badge/payment-M--Pesa-brightgreen)](https://developer.safaricom.co.ke/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](./LICENSE)
@@ -49,8 +49,8 @@ Deploy Mikopo on any Linux VPS (Ubuntu, Debian, Hetzner, AWS, DigitalOcean, Lino
 mkdir -p /opt/mikopo && cd /opt/mikopo
 
 # Fetch production compose file and environment template
-curl -fsSL https://raw.githubusercontent.com/imrany/Mikopo/main/docker-compose.yml -o docker-compose.yml
-curl -fsSL https://raw.githubusercontent.com/imrany/Mikopo/main/.env.example -o .env
+curl -fsSL https://raw.githubusercontent.com/imrany/mikopo/main/docker-compose.yml -o docker-compose.yml
+curl -fsSL https://raw.githubusercontent.com/imrany/mikopo/main/.env.example -o .env
 ```
 
 ### Step 2: Configure secrets in `.env`
@@ -127,7 +127,7 @@ echo "YOUR_GITHUB_PAT" | docker login ghcr.io -u imrany --password-stdin
 | `VAPID_PUBLIC_KEY` / `PRIVATE` |       No        | —              | Web push notification VAPID credentials            |
 
 
-## 📱 Safaricom M-Pesa Daraja Integration
+## M-Pesa Integration
 
 Mikopo includes first-class support for automated Kenyan mobile money operations:
 
