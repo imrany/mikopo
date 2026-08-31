@@ -1,14 +1,13 @@
-# 💰 Mikopo — Self-Hosted Microfinance & Peer Lending Platform
+# 💰 Mikopo
 
 [![Docker Image](https://img.shields.io/badge/docker-ghcr.io%2Fimrany%2Fmikopo-blue?logo=docker)](https://github.com/imrany/Mikopo/pkgs/container/mikopo)
 [![GitHub Repository](https://img.shields.io/badge/github-imrany%2FMikopo-black?logo=github)](https://github.com/imrany/Mikopo)
 [![Database](https://img.shields.io/badge/database-PostgreSQL%2016-blue?logo=postgresql)](https://www.postgresql.org/)
-[![Payment](https://img.shields.io/badge/payment-Safaricom%20Daraja%20M--Pesa-brightgreen)](https://developer.safaricom.co.ke/)
-[![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
+[![Payment](https://img.shields.io/badge/payment-M--Pesa-brightgreen)](https://developer.safaricom.co.ke/)
+[![License](https://img.shields.io/badge/license-Apache-2.0-green)](./LICENSE)
 
-**Mikopo** is a modern, enterprise-ready, self-hostable microfinance lending platform and credit operating system designed for micro-lenders, SACCOs, fintech startups, and investment groups. It features automated credit scoring, dynamic tier unlocks, multi-party guarantor verification workflows, and native **Safaricom M-Pesa Daraja** integration (B2C disbursements + STK Push repayments).
+**Mikopo** is a modern, enterprise-ready, self-hostable microfinance lending platform and credit operating system designed for micro-lenders, SACCOs, fintech startups, and investment groups. It features automated credit scoring, dynamic tier unlocks, multi-party guarantor verification workflows, and supports **M-Pesa** (B2C disbursements + STK Push repayments).
 
----
 
 ## 🏛️ System Architecture
 
@@ -41,7 +40,6 @@
        └───────────────────────────────────┘ └───────────────────────────────┘
 ```
 
----
 
 ## 🚀 Quick Start (Docker & GHCR)
 
@@ -96,7 +94,6 @@ Open your browser to:
 2. Create your **Super Admin Account** (Email & Password).
 3. The platform will automatically initialize database seeds and loan tiers (Starter -> Platinum).
 
----
 
 ## 📦 Pulling Pre-Built Docker Images from GHCR
 
@@ -105,7 +102,7 @@ Mikopo releases official Docker images directly to GitHub Container Registry:
 | Registry             | Image Identifier               | Notes                          |
 | :------------------- | :----------------------------- | :----------------------------- |
 | **GHCR**             | `ghcr.io/imrany/mikopo:latest` | Latest stable build            |
-| **GHCR (Versioned)** | `ghcr.io/imrany/mikopo:v1.2.0` | Recommended for production pin |
+| **GHCR (Versioned)** | `ghcr.io/imrany/mikopo:v0.1.0` | Recommended for production pin |
 
 ```bash
 docker pull ghcr.io/imrany/mikopo:latest
@@ -117,7 +114,6 @@ _If pulling from a private repository, authenticate using a GitHub Personal Acce
 echo "YOUR_GITHUB_PAT" | docker login ghcr.io -u imrany --password-stdin
 ```
 
----
 
 ## ⚙️ Environment Variables Reference
 
@@ -132,7 +128,6 @@ echo "YOUR_GITHUB_PAT" | docker login ghcr.io -u imrany --password-stdin
 | `SMTP_HOST` / `SMTP_PORT`      |       No        | —              | SMTP mail server for transactional notifications   |
 | `VAPID_PUBLIC_KEY` / `PRIVATE` |       No        | —              | Web push notification VAPID credentials            |
 
----
 
 ## 📱 Safaricom M-Pesa Daraja Integration
 
@@ -147,7 +142,6 @@ Mikopo includes first-class support for automated Kenyan mobile money operations
 - **STK Callback:** `https://yourdomain.com/api/public/mpesa/stk-callback`
 - **B2C Result:** `https://yourdomain.com/api/public/mpesa/b2c-result`
 
----
 
 ## 🔒 Production Nginx Reverse Proxy with Free SSL
 
@@ -183,34 +177,31 @@ server {
 Enable SSL automatically with Certbot:
 
 ```bash
-sudo certbot --nginx -d mikopo.yourdomain.com
+sudo certbot --nginx -d mikopo.yourdomain.com -d www.mikopo.yourdomain.com
 ```
 
----
 
 ## 💻 Local Development
 
 ```bash
 # 1. Clone repo
-git clone https://github.com/imrany/Mikopo.git
-cd Mikopo
+git clone https://github.com/imrany/mikopo.git
+cd mikopo
 
 # 2. Install dependencies & configure env
-npm install
+pnpm install
 cp .env.example .env
 
 # 3. Start Postgres & migrate
 docker compose up -d postgres
-npx prisma db push --schema=./src/prisma/schema.prisma
-npm run seed
+pnpm run prisma:push
 
 # 4. Start local development server
-npm run dev
+pnpm run dev
 ```
 
 Visit `http://localhost:3000` or view the complete interactive guide at `http://localhost:3000/docs`.
 
----
 
 ## 📄 License
 

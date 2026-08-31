@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as DocsRouteImport } from './routes/docs'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as TermsRouteImport } from './routes/terms'
@@ -47,6 +48,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsRoute = DocsRouteImport.update({
+  id: '/docs',
+  path: '/docs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -172,6 +178,7 @@ const ApiPublicMpesaStkCallbackRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/docs': typeof DocsRoute
   '/privacy': typeof PrivacyRoute
   '/setup': typeof SetupRoute
   '/terms': typeof TermsRoute
@@ -198,6 +205,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/docs': typeof DocsRoute
   '/privacy': typeof PrivacyRoute
   '/setup': typeof SetupRoute
   '/terms': typeof TermsRoute
@@ -225,6 +233,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/docs': typeof DocsRoute
   '/privacy': typeof PrivacyRoute
   '/setup': typeof SetupRoute
   '/terms': typeof TermsRoute
@@ -253,6 +262,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/docs'
     | '/privacy'
     | '/setup'
     | '/terms'
@@ -279,6 +289,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/docs'
     | '/privacy'
     | '/setup'
     | '/terms'
@@ -305,6 +316,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/docs'
     | '/privacy'
     | '/setup'
     | '/terms'
@@ -333,6 +345,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  DocsRoute: typeof DocsRoute
   PrivacyRoute: typeof PrivacyRoute
   SetupRoute: typeof SetupRoute
   TermsRoute: typeof TermsRoute
@@ -361,6 +374,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -576,6 +596,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  DocsRoute: DocsRoute,
   PrivacyRoute: PrivacyRoute,
   SetupRoute: SetupRoute,
   TermsRoute: TermsRoute,
