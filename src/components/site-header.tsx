@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import {
   Award,
+  BookOpen,
   FlaskConical,
   LayoutDashboard,
   HelpCircle,
@@ -116,6 +117,16 @@ export function SiteHeader() {
                     >
                       Referrals
                     </Link>
+                    <Link
+                      to="/docs"
+                      className={
+                        path === "/docs"
+                          ? "transition-colors text-primary underline underline-offset-3"
+                          : "transition-colors hover:text-primary"
+                      }
+                    >
+                      Docs
+                    </Link>
                   </>
                 )}
               </>
@@ -154,6 +165,16 @@ export function SiteHeader() {
                 >
                   Testimonials
                 </Button>
+                <Link
+                  to="/docs"
+                  className={
+                    path === "/docs"
+                      ? "transition-colors text-primary underline underline-offset-3 text-sm font-medium"
+                      : "transition-colors text-muted-foreground hover:text-primary text-sm font-medium"
+                  }
+                >
+                  Docs
+                </Link>
               </>
             )}
           </nav>
@@ -257,6 +278,9 @@ export function SiteHeader() {
                   )}
                   <DropdownMenuItem onSelect={() => navigate({ to: "/account" })}>
                     <User className="mr-2 size-4" /> Account & Security
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => navigate({ to: "/docs" })}>
+                    <BookOpen className="mr-2 size-4" /> Docs & Self-Hosting
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={() => void signOut()}>

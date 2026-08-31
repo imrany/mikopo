@@ -1162,6 +1162,9 @@ function Landing() {
             <Link to="/referrals" className="hover:text-foreground hover:underline">
               Referrals
             </Link>
+            <Link to="/docs" className="hover:text-foreground hover:underline">
+              Docs & Self-Hosting
+            </Link>
           </div>
           <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} {businessName}. Powered by Safaricom M-Pesa integration.
