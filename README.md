@@ -146,13 +146,13 @@ Mikopo includes first-class support for automated Kenyan mobile money operations
 ```nginx
 server {
     listen 80;
-    server_name mikopo.yourdomain.com;
+    server_name mikopo.yourdomain.com www.mikopo.yourdomain.com;
     return 301 https://$host$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name mikopo.yourdomain.com;
+    server_name mikopo.yourdomain.com www.mikopo.yourdomain.com;
 
     ssl_certificate /etc/letsencrypt/live/mikopo.yourdomain.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/mikopo.yourdomain.com/privkey.pem;
