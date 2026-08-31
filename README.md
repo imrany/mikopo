@@ -1,10 +1,8 @@
-# 💰 Mikopo
-
 [![Docker Image](https://img.shields.io/badge/docker-ghcr.io%2Fimrany%2Fmikopo-blue?logo=docker)](https://github.com/imrany/Mikopo/pkgs/container/mikopo)
 [![GitHub Repository](https://img.shields.io/badge/github-imrany%2FMikopo-black?logo=github)](https://github.com/imrany/Mikopo)
 [![Database](https://img.shields.io/badge/database-PostgreSQL%2016-blue?logo=postgresql)](https://www.postgresql.org/)
 [![Payment](https://img.shields.io/badge/payment-M--Pesa-brightgreen)](https://developer.safaricom.co.ke/)
-[![License](https://img.shields.io/badge/license-Apache-2.0-green)](./LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-green)](./LICENSE)
 
 **Mikopo** is a modern, enterprise-ready, self-hostable microfinance lending platform and credit operating system designed for micro-lenders, SACCOs, fintech startups, and investment groups. It features automated credit scoring, dynamic tier unlocks, multi-party guarantor verification workflows, and supports **M-Pesa** (B2C disbursements + STK Push repayments).
 
